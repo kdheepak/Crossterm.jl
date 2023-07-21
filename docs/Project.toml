@@ -1,0 +1,3 @@
+[deps]
+Crossterm = "89a1a94d-67fa-4c27-8677-ab6d33b1ad6c"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
