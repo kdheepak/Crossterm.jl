@@ -169,6 +169,7 @@ blinking(switch = true) =
   else
     @crossterm_call crossterm_cursor_disable_blinking()
   end
+show() = @crossterm_call crossterm_cursor_show()
 hide() = @crossterm_call crossterm_cursor_hide()
 down(rows = 1) = @crossterm_call crossterm_cursor_move_down(rows)
 up(rows = 1) = @crossterm_call crossterm_cursor_move_up(rows)
@@ -208,6 +209,5 @@ end
 Base.cconvert(::Type{LibCrossterm.crossterm_CursorStyle}, v::Style.T) = LibCrossterm.crossterm_CursorStyle(UInt32(v))
 
 style(s::Style.T) = @crossterm_call crossterm_cursor_set_style(s)
-show() = @crossterm_call crossterm_cursor_show()
 
 end
