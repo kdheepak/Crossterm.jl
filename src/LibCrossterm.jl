@@ -68,9 +68,10 @@ end
 
 CursorPosition struct
 """
-struct crossterm_CursorPosition
+mutable struct crossterm_CursorPosition
   column::UInt16
   row::UInt16
+  crossterm_CursorPosition() = new()
 end
 
 @enum crossterm_Color_Tag::UInt32 begin
@@ -95,10 +96,11 @@ end
   CROSSTERM_COLOR_ANSI_VALUE = 18
 end
 
-struct crossterm_Rgb_Body
+mutable struct crossterm_Rgb_Body
   r::UInt8
   g::UInt8
   b::UInt8
+  crossterm_Rgb_Body() = new()
 end
 
 struct crossterm_Color
@@ -128,9 +130,10 @@ end
 
 TerminalSize
 """
-struct crossterm_TerminalSize
+mutable struct crossterm_TerminalSize
   width::UInt16
   height::UInt16
+  crossterm_TerminalSize() = new()
 end
 
 """
