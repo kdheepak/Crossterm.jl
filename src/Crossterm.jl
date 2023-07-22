@@ -1,5 +1,5 @@
 module Crossterm
 
-# Write your package code here.
+include("LibCrossterm.jl")
 
 end

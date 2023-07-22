@@ -3,6 +3,9 @@ uuid = "89a1a94d-67fa-4c27-8677-ab6d33b1ad6c"
 authors = ["Dheepak Krishnamurthy"]
 version = "1.0.0-DEV"
 
+[deps]
+libcrossterm_jll = "7fdd842c-1c35-5047-b6c4-5b8c94d478bc"
+
 [compat]
 julia = "1.9"
 
