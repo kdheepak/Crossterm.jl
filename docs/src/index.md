@@ -17,10 +17,16 @@ The Julia interface provides simpler interface with functions like:
 - `next()`
 - `prev()`
 
-```@index
+and more.
 
-```
+See API documentation below.
 
 ```@autodocs
 Modules = [Crossterm]
+```
+
+Full C-API documentation is below
+
+```@autodocs
+Modules = [Crossterm.LibCrossterm]
 ```
