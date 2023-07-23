@@ -334,6 +334,36 @@ function crossterm_cursor_moveto(x, y)
 end
 
 """
+    crossterm_cursor_position_get(pos)
+
+Get cursor position (column, row)
+
+### Prototype
+
+```c
+int crossterm_cursor_position_get(crossterm_CursorPosition *pos);
+```
+"""
+function crossterm_cursor_position_get(pos)
+  @ccall libcrossterm.crossterm_cursor_position_get(pos::Ptr{crossterm_CursorPosition})::Cint
+end
+
+"""
+    crossterm_cursor_position_set(pos)
+
+Set cursor position (column, row)
+
+### Prototype
+
+```c
+int crossterm_cursor_position_set(crossterm_CursorPosition pos);
+```
+"""
+function crossterm_cursor_position_set(pos)
+  @ccall libcrossterm.crossterm_cursor_position_set(pos::crossterm_CursorPosition)::Cint
+end
+
+"""
     crossterm_cursor_restore_position()
 
 Restores the saved terminal cursor position.
@@ -644,11 +674,11 @@ end
 """
     crossterm_event_poll(secs, nanos)
 
-Checks if there is an [`Event`](enum.Event.html) available.
+Checks if there is an `Event` available.
 
-Returns `Ok(true)` if an [`Event`](enum.Event.html) is available otherwise it returns `Ok(false)`.
+Returns `true` if an `Event` is available otherwise it returns `false`.
 
-`Ok(true)` guarantees that subsequent call to the [`read`](fn.read.html) function won't block.
+`true` guarantees that subsequent call to the [[`crossterm_event_read`](@ref)] function won't block.
 
 # Arguments
 
@@ -697,9 +727,9 @@ end
 """
     crossterm_event_read()
 
-Reads a single Event as a string.
+Reads a single Event as a UTF-8 json string.
 
-This function blocks until an Event is available. Combine it with the [[`crossterm_event_poll`](@ref)] function to get non-blocking reads. Use [[`crossterm_free_c_char`](@ref)] to free data
+This function blocks until an Event is available. Combine it with the [[`crossterm_event_poll`](@ref)] function to get non-blocking reads. User is responsible to free string. Use [[`crossterm_free_c_char`](@ref)] to free data
 
 ### Prototype
 
@@ -722,21 +752,6 @@ int crossterm_free_c_char(char *s);
 """
 function crossterm_free_c_char(s)
   @ccall libcrossterm.crossterm_free_c_char(s::Ptr{Cchar})::Cint
-end
-
-"""
-    crossterm_get_cursor_position(pos)
-
-Get cursor position (column, row)
-
-### Prototype
-
-```c
-int crossterm_get_cursor_position(crossterm_CursorPosition *pos);
-```
-"""
-function crossterm_get_cursor_position(pos)
-  @ccall libcrossterm.crossterm_get_cursor_position(pos::Ptr{crossterm_CursorPosition})::Cint
 end
 
 """
@@ -772,9 +787,9 @@ end
 """
     crossterm_last_error_message()
 
-Return most recent error message into a caller-provided buffer as a UTF-8 string
+Return most recent error message into a UTF-8 string buffer.
 
-Null character is stored in the last location of buffer Use [[`crossterm_free_c_char`](@ref)] to free data
+Null character is stored in the last location of buffer. Caller is responsible to memory associated with string buffer. Use [[`crossterm_free_c_char`](@ref)] to free data.
 
 ### Prototype
 
@@ -799,21 +814,6 @@ int crossterm_leave_alternate_screen(void);
 """
 function crossterm_leave_alternate_screen()
   @ccall libcrossterm.crossterm_leave_alternate_screen()::Cint
-end
-
-"""
-    crossterm_set_cursor_position(pos)
-
-Set cursor position (column, row)
-
-### Prototype
-
-```c
-int crossterm_set_cursor_position(crossterm_CursorPosition pos);
-```
-"""
-function crossterm_set_cursor_position(pos)
-  @ccall libcrossterm.crossterm_set_cursor_position(pos::crossterm_CursorPosition)::Cint
 end
 
 """
@@ -917,7 +917,7 @@ end
 """
     crossterm_terminal_begin_synchronized_update()
 
-A command that instructs the terminal emulator to being a synchronized frame.
+Instructs the terminal emulator to begin a synchronized frame.
 
 # Notes
 
@@ -987,7 +987,7 @@ end
 """
     crossterm_terminal_end_synchronized_update()
 
-A command that instructs the terminal to end a synchronized frame.
+Instructs the terminal to end a synchronized frame.
 
 # Notes
 
@@ -1059,7 +1059,11 @@ end
 
 Sets terminal title.
 
-This function borrows a slice to title and expects the user to clean up the allocated memory
+# Safety
+
+This function takes a raw pointer as argument. As such, the caller must ensure that: - The `title` pointer points to a valid null-terminated string. - This function borrows a slice to a valid null-terminated string and the memory referenced by `title` won't be deallocated or modified for the duration of the function call.. - The `title` pointer is correctly aligned and `title` points to an initialized memory.
+
+If these conditions are not met, the behavior is undefined.
 
 ### Prototype
 

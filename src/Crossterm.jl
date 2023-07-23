@@ -2,6 +2,7 @@ module Crossterm
 
 using EnumX
 using Dates
+using JSON3
 
 include("LibCrossterm.jl")
 
@@ -201,6 +202,7 @@ function poll(duration::Period = Second(0))
   end
   result != 0
 end
+poll(duration::Number) = poll(Second(duration))
 
 """
 Push or pop the keyboard enhancement flags.
@@ -219,7 +221,7 @@ function read()
   ptr = LibCrossterm.crossterm_event_read()
   s = unsafe_string(ptr)
   LibCrossterm.crossterm_free_c_char(ptr)
-  s
+  JSON3.read(s, Dict)
 end
 
 """
@@ -302,7 +304,7 @@ Get the current position of the terminal cursor.
 """
 function position()
   p = LibCrossterm.crossterm_CursorPosition()
-  @crossterm_call crossterm_get_cursor_position(Ref(p))
+  @crossterm_call crossterm_cursor_position_get(Ref(p))
   (; x = Int(p.column), y = Int(p.row))
 end
 
@@ -314,7 +316,7 @@ function position(p::NamedTuple{(:x, :y),Tuple{Int64,Int64}})
   p = LibCrossterm.crossterm_CursorPosition()
   p.column = x
   p.row = y
-  @crossterm_call crossterm_set_cursor_position(p)
+  @crossterm_call crossterm_cursor_position_set(p)
 end
 
 """
