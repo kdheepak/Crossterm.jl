@@ -147,7 +147,7 @@ end
 Get the size of the terminal.
 """
 function size()
-  s = crossterm_TerminalSize()
+  s = crossterm_TerminalSize(0, 0)
   @crossterm_call crossterm_terminal_size(Ref(s))
   x = Int(s.width)
   y = Int(s.height)
@@ -190,7 +190,7 @@ mouse_capture(switch = true) =
   end
 
 """
-Poll the terminal for input events.
+Poll the terminal for input events for duration (Dates.Period)
 """
 function poll(duration::Period = Second(0))
   nanos_total = Nanosecond(duration).value
@@ -202,7 +202,10 @@ function poll(duration::Period = Second(0))
   end
   result != 0
 end
-poll(duration::Number) = poll(Second(duration))
+"""
+Poll the terminal for input events for duration (seconds)
+"""
+poll(duration::Integer = 0) = poll(Second(duration))
 
 """
 Push or pop the keyboard enhancement flags.
@@ -303,7 +306,7 @@ restore() = @crossterm_call crossterm_cursor_restore_position()
 Get the current position of the terminal cursor.
 """
 function position()
-  p = LibCrossterm.crossterm_CursorPosition()
+  p = LibCrossterm.crossterm_CursorPosition(0, 0)
   @crossterm_call crossterm_cursor_position_get(Ref(p))
   (; x = Int(p.column), y = Int(p.row))
 end
@@ -313,9 +316,7 @@ Set the position of the terminal cursor to `p` coordinates.
 """
 function position(p::NamedTuple{(:x, :y),Tuple{Int64,Int64}})
   (; x, y) = p
-  p = LibCrossterm.crossterm_CursorPosition()
-  p.column = x
-  p.row = y
+  p = LibCrossterm.crossterm_CursorPosition(x, y)
   @crossterm_call crossterm_cursor_position_set(p)
 end
 

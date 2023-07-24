@@ -3,6 +3,28 @@ module LibCrossterm
 using libcrossterm_jll
 export libcrossterm_jll
 
+"""
+    crossterm_KeyModifiers
+
+Represents key modifiers (shift, control, alt, etc.).
+
+**Note:** `SUPER`, `HYPER`, and `META` can only be read if [`KeyboardEnhancementFlags::DISAMBIGUATE\\_ESCAPE\\_CODES`] has been enabled with [`PushKeyboardEnhancementFlags`].
+"""
+mutable struct crossterm_KeyModifiers
+  bits::UInt8
+end
+
+"""
+    crossterm_KeyEventState
+
+Represents extra state about the key event.
+
+**Note:** This state can only be read if [`KeyboardEnhancementFlags::DISAMBIGUATE\\_ESCAPE\\_CODES`] has been enabled with [`PushKeyboardEnhancementFlags`].
+"""
+mutable struct crossterm_KeyEventState
+  bits::UInt8
+end
+
 @enum crossterm_Attribute::UInt32 begin
   CROSSTERM_ATTRIBUTE_RESET = 0
   CROSSTERM_ATTRIBUTE_BOLD = 1
@@ -64,6 +86,71 @@ Style of the cursor. It uses two types of escape codes, one to control blinking,
 end
 
 """
+    crossterm_KeyEventKind
+
+Represents a keyboard event kind.
+"""
+@enum crossterm_KeyEventKind::UInt32 begin
+  CROSSTERM_KEY_EVENT_KIND_PRESS = 0
+  CROSSTERM_KEY_EVENT_KIND_REPEAT = 1
+  CROSSTERM_KEY_EVENT_KIND_RELEASE = 2
+end
+
+"""
+    crossterm_MediaKeyCode
+
+Represents a media key (as part of [`KeyCode::Media`]).
+"""
+@enum crossterm_MediaKeyCode::UInt32 begin
+  CROSSTERM_MEDIA_KEY_CODE_PLAY = 0
+  CROSSTERM_MEDIA_KEY_CODE_PAUSE = 1
+  CROSSTERM_MEDIA_KEY_CODE_PLAY_PAUSE = 2
+  CROSSTERM_MEDIA_KEY_CODE_REVERSE = 3
+  CROSSTERM_MEDIA_KEY_CODE_STOP = 4
+  CROSSTERM_MEDIA_KEY_CODE_FAST_FORWARD = 5
+  CROSSTERM_MEDIA_KEY_CODE_REWIND = 6
+  CROSSTERM_MEDIA_KEY_CODE_TRACK_NEXT = 7
+  CROSSTERM_MEDIA_KEY_CODE_TRACK_PREVIOUS = 8
+  CROSSTERM_MEDIA_KEY_CODE_RECORD = 9
+  CROSSTERM_MEDIA_KEY_CODE_LOWER_VOLUME = 10
+  CROSSTERM_MEDIA_KEY_CODE_RAISE_VOLUME = 11
+  CROSSTERM_MEDIA_KEY_CODE_MUTE_VOLUME = 12
+end
+
+"""
+    crossterm_ModifierKeyCode
+
+Represents a modifier key (as part of [`KeyCode::Modifier`]).
+"""
+@enum crossterm_ModifierKeyCode::UInt32 begin
+  CROSSTERM_MODIFIER_KEY_CODE_LEFT_SHIFT = 0
+  CROSSTERM_MODIFIER_KEY_CODE_LEFT_CONTROL = 1
+  CROSSTERM_MODIFIER_KEY_CODE_LEFT_ALT = 2
+  CROSSTERM_MODIFIER_KEY_CODE_LEFT_SUPER = 3
+  CROSSTERM_MODIFIER_KEY_CODE_LEFT_HYPER = 4
+  CROSSTERM_MODIFIER_KEY_CODE_LEFT_META = 5
+  CROSSTERM_MODIFIER_KEY_CODE_RIGHT_SHIFT = 6
+  CROSSTERM_MODIFIER_KEY_CODE_RIGHT_CONTROL = 7
+  CROSSTERM_MODIFIER_KEY_CODE_RIGHT_ALT = 8
+  CROSSTERM_MODIFIER_KEY_CODE_RIGHT_SUPER = 9
+  CROSSTERM_MODIFIER_KEY_CODE_RIGHT_HYPER = 10
+  CROSSTERM_MODIFIER_KEY_CODE_RIGHT_META = 11
+  CROSSTERM_MODIFIER_KEY_CODE_ISO_LEVEL3_SHIFT = 12
+  CROSSTERM_MODIFIER_KEY_CODE_ISO_LEVEL5_SHIFT = 13
+end
+
+"""
+    crossterm_MouseButton
+
+Represents a mouse button.
+"""
+@enum crossterm_MouseButton::UInt32 begin
+  CROSSTERM_MOUSE_BUTTON_LEFT = 0
+  CROSSTERM_MOUSE_BUTTON_RIGHT = 1
+  CROSSTERM_MOUSE_BUTTON_MIDDLE = 2
+end
+
+"""
     crossterm_CursorPosition
 
 CursorPosition struct
@@ -71,7 +158,6 @@ CursorPosition struct
 mutable struct crossterm_CursorPosition
   column::UInt16
   row::UInt16
-  crossterm_CursorPosition() = new()
 end
 
 @enum crossterm_Color_Tag::UInt32 begin
@@ -100,7 +186,6 @@ mutable struct crossterm_Rgb_Body
   r::UInt8
   g::UInt8
   b::UInt8
-  crossterm_Rgb_Body() = new()
 end
 
 struct crossterm_Color
@@ -133,7 +218,190 @@ TerminalSize
 mutable struct crossterm_TerminalSize
   width::UInt16
   height::UInt16
-  crossterm_TerminalSize() = new()
+end
+
+"""
+    crossterm_KeyCode_Tag
+
+Represents a key.
+"""
+@enum crossterm_KeyCode_Tag::UInt32 begin
+  CROSSTERM_KEY_CODE_BACKSPACE = 0
+  CROSSTERM_KEY_CODE_ENTER = 1
+  CROSSTERM_KEY_CODE_LEFT = 2
+  CROSSTERM_KEY_CODE_RIGHT = 3
+  CROSSTERM_KEY_CODE_UP = 4
+  CROSSTERM_KEY_CODE_DOWN = 5
+  CROSSTERM_KEY_CODE_HOME = 6
+  CROSSTERM_KEY_CODE_END = 7
+  CROSSTERM_KEY_CODE_PAGE_UP = 8
+  CROSSTERM_KEY_CODE_PAGE_DOWN = 9
+  CROSSTERM_KEY_CODE_TAB = 10
+  CROSSTERM_KEY_CODE_BACK_TAB = 11
+  CROSSTERM_KEY_CODE_DELETE = 12
+  CROSSTERM_KEY_CODE_INSERT = 13
+  CROSSTERM_KEY_CODE_F = 14
+  CROSSTERM_KEY_CODE_CHAR = 15
+  CROSSTERM_KEY_CODE_NULL = 16
+  CROSSTERM_KEY_CODE_ESC = 17
+  CROSSTERM_KEY_CODE_CAPS_LOCK = 18
+  CROSSTERM_KEY_CODE_SCROLL_LOCK = 19
+  CROSSTERM_KEY_CODE_NUM_LOCK = 20
+  CROSSTERM_KEY_CODE_PRINT_SCREEN = 21
+  CROSSTERM_KEY_CODE_PAUSE = 22
+  CROSSTERM_KEY_CODE_MENU = 23
+  CROSSTERM_KEY_CODE_KEYPAD_BEGIN = 24
+  CROSSTERM_KEY_CODE_MEDIA = 25
+  CROSSTERM_KEY_CODE_MODIFIER = 26
+end
+
+struct crossterm_KeyCode
+  data::NTuple{8,UInt8}
+end
+
+function Base.getproperty(x::Ptr{crossterm_KeyCode}, f::Symbol)
+  f === :tag && return Ptr{crossterm_KeyCode_Tag}(x + 0)
+  f === :f && return Ptr{UInt8}(x + 4)
+  f === :char_ && return Ptr{UInt32}(x + 4)
+  f === :media && return Ptr{crossterm_MediaKeyCode}(x + 4)
+  f === :modifier && return Ptr{crossterm_ModifierKeyCode}(x + 4)
+  return getfield(x, f)
+end
+
+function Base.getproperty(x::crossterm_KeyCode, f::Symbol)
+  r = Ref{crossterm_KeyCode}(x)
+  ptr = Base.unsafe_convert(Ptr{crossterm_KeyCode}, r)
+  fptr = getproperty(ptr, f)
+  GC.@preserve r unsafe_load(fptr)
+end
+
+function Base.setproperty!(x::Ptr{crossterm_KeyCode}, f::Symbol, v)
+  unsafe_store!(getproperty(x, f), v)
+end
+
+"""
+    crossterm_KeyEvent
+
+Represents a key event.
+"""
+mutable struct crossterm_KeyEvent
+  code::crossterm_KeyCode
+  modifiers::crossterm_KeyModifiers
+  kind::crossterm_KeyEventKind
+  state::crossterm_KeyEventState
+end
+
+"""
+    crossterm_MouseEventKind_Tag
+
+A mouse event kind.
+
+# Platform-specific Notes
+
+## Mouse Buttons
+
+Some platforms/terminals do not report mouse button for the `MouseEventKind::Up` and `MouseEventKind::Drag` events. `MouseButton::Left` is returned if we don't know which button was used.
+"""
+@enum crossterm_MouseEventKind_Tag::UInt32 begin
+  CROSSTERM_MOUSE_EVENT_KIND_DOWN = 0
+  CROSSTERM_MOUSE_EVENT_KIND_UP = 1
+  CROSSTERM_MOUSE_EVENT_KIND_DRAG = 2
+  CROSSTERM_MOUSE_EVENT_KIND_MOVED = 3
+  CROSSTERM_MOUSE_EVENT_KIND_SCROLL_DOWN = 4
+  CROSSTERM_MOUSE_EVENT_KIND_SCROLL_UP = 5
+end
+
+struct crossterm_MouseEventKind
+  data::NTuple{8,UInt8}
+end
+
+function Base.getproperty(x::Ptr{crossterm_MouseEventKind}, f::Symbol)
+  f === :tag && return Ptr{crossterm_MouseEventKind_Tag}(x + 0)
+  f === :down && return Ptr{crossterm_MouseButton}(x + 4)
+  f === :up && return Ptr{crossterm_MouseButton}(x + 4)
+  f === :drag && return Ptr{crossterm_MouseButton}(x + 4)
+  return getfield(x, f)
+end
+
+function Base.getproperty(x::crossterm_MouseEventKind, f::Symbol)
+  r = Ref{crossterm_MouseEventKind}(x)
+  ptr = Base.unsafe_convert(Ptr{crossterm_MouseEventKind}, r)
+  fptr = getproperty(ptr, f)
+  GC.@preserve r unsafe_load(fptr)
+end
+
+function Base.setproperty!(x::Ptr{crossterm_MouseEventKind}, f::Symbol, v)
+  unsafe_store!(getproperty(x, f), v)
+end
+
+"""
+    crossterm_MouseEvent
+
+Represents a mouse event.
+
+# Platform-specific Notes
+
+## Mouse Buttons
+
+Some platforms/terminals do not report mouse button for the `MouseEventKind::Up` and `MouseEventKind::Drag` events. `MouseButton::Left` is returned if we don't know which button was used.
+
+## Key Modifiers
+
+Some platforms/terminals does not report all key modifiers combinations for all mouse event types. For example - macOS reports `Ctrl` + left mouse button click as a right mouse button click.
+"""
+mutable struct crossterm_MouseEvent
+  kind::crossterm_MouseEventKind
+  column::UInt16
+  row::UInt16
+  modifiers::crossterm_KeyModifiers
+end
+
+mutable struct crossterm_CString
+  str::Ptr{Cchar}
+  len::Cint
+end
+
+"""
+    crossterm_Event_Tag
+
+Represents an event.
+"""
+@enum crossterm_Event_Tag::UInt32 begin
+  CROSSTERM_EVENT_FOCUS_GAINED = 0
+  CROSSTERM_EVENT_FOCUS_LOST = 1
+  CROSSTERM_EVENT_KEY = 2
+  CROSSTERM_EVENT_MOUSE = 3
+  CROSSTERM_EVENT_PASTE = 4
+  CROSSTERM_EVENT_RESIZE = 5
+end
+
+mutable struct crossterm_Resize_Body
+  _0::UInt16
+  _1::UInt16
+end
+
+struct crossterm_Event
+  data::NTuple{32,UInt8}
+end
+
+function Base.getproperty(x::Ptr{crossterm_Event}, f::Symbol)
+  f === :tag && return Ptr{crossterm_Event_Tag}(x + 0)
+  f === :key && return Ptr{crossterm_KeyEvent}(x + 8)
+  f === :mouse && return Ptr{crossterm_MouseEvent}(x + 8)
+  f === :paste && return Ptr{crossterm_CString}(x + 8)
+  f === :RESIZE && return Ptr{crossterm_Resize_Body}(x + 8)
+  return getfield(x, f)
+end
+
+function Base.getproperty(x::crossterm_Event, f::Symbol)
+  r = Ref{crossterm_Event}(x)
+  ptr = Base.unsafe_convert(Ptr{crossterm_Event}, r)
+  fptr = getproperty(ptr, f)
+  GC.@preserve r unsafe_load(fptr)
+end
+
+function Base.setproperty!(x::Ptr{crossterm_Event}, f::Symbol, v)
+  unsafe_store!(getproperty(x, f), v)
 end
 
 """
@@ -674,9 +942,9 @@ end
 """
     crossterm_event_poll(secs, nanos)
 
-Checks if there is an `Event` available.
+Checks if there is an [`Event`] available.
 
-Returns `true` if an `Event` is available otherwise it returns `false`.
+Returns `true` if an [`Event`] is available otherwise it returns `false`.
 
 `true` guarantees that subsequent call to the [[`crossterm_event_read`](@ref)] function won't block.
 
@@ -727,9 +995,9 @@ end
 """
     crossterm_event_read()
 
-Reads a single Event as a UTF-8 json string.
+Reads a single [`Event`] as a UTF-8 json string.
 
-This function blocks until an Event is available. Combine it with the [[`crossterm_event_poll`](@ref)] function to get non-blocking reads. User is responsible to free string. Use [[`crossterm_free_c_char`](@ref)] to free data
+This function blocks until an [`Event`] is available. Combine it with the [[`crossterm_event_poll`](@ref)] function to get non-blocking reads. User is responsible to free string. Use [[`crossterm_free_c_char`](@ref)] to free data
 
 ### Prototype
 
@@ -743,6 +1011,10 @@ end
 
 """
     crossterm_free_c_char(s)
+
+Frees data behind pointer to UTF-8 string allocated by this crate
+
+Null character is stored in the last location of buffer.
 
 ### Prototype
 
@@ -1089,6 +1361,28 @@ int crossterm_terminal_size(crossterm_TerminalSize *size);
 function crossterm_terminal_size(size)
   @ccall libcrossterm.crossterm_terminal_size(size::Ptr{crossterm_TerminalSize})::Cint
 end
+
+# Skipping MacroDefinition: crossterm_KeyModifiers_SHIFT ( crossterm_KeyModifiers ) { . bits = ( uint8_t ) 1 }
+
+# Skipping MacroDefinition: crossterm_KeyModifiers_CONTROL ( crossterm_KeyModifiers ) { . bits = ( uint8_t ) 2 }
+
+# Skipping MacroDefinition: crossterm_KeyModifiers_ALT ( crossterm_KeyModifiers ) { . bits = ( uint8_t ) 4 }
+
+# Skipping MacroDefinition: crossterm_KeyModifiers_SUPER ( crossterm_KeyModifiers ) { . bits = ( uint8_t ) 8 }
+
+# Skipping MacroDefinition: crossterm_KeyModifiers_HYPER ( crossterm_KeyModifiers ) { . bits = ( uint8_t ) 16 }
+
+# Skipping MacroDefinition: crossterm_KeyModifiers_META ( crossterm_KeyModifiers ) { . bits = ( uint8_t ) 32 }
+
+# Skipping MacroDefinition: crossterm_KeyModifiers_NONE ( crossterm_KeyModifiers ) { . bits = ( uint8_t ) 0 }
+
+# Skipping MacroDefinition: crossterm_KeyEventState_KEYPAD ( crossterm_KeyEventState ) { . bits = ( uint8_t ) 1 }
+
+# Skipping MacroDefinition: crossterm_KeyEventState_CAPS_LOCK ( crossterm_KeyEventState ) { . bits = ( uint8_t ) 8 }
+
+# Skipping MacroDefinition: crossterm_KeyEventState_NUM_LOCK ( crossterm_KeyEventState ) { . bits = ( uint8_t ) 8 }
+
+# Skipping MacroDefinition: crossterm_KeyEventState_NONE ( crossterm_KeyEventState ) { . bits = ( uint8_t ) 0 }
 
 # exports
 const PREFIXES = ["crossterm_"]

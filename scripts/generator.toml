@@ -8,6 +8,7 @@ show_c_function_prototype = true
 use_julia_native_enum_type = true
 export_symbol_prefixes = ["crossterm_"]
 auto_mutability = true
+auto_mutability_with_new = false
 
 [codegen]
 use_julia_bool = true

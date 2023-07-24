@@ -157,9 +157,9 @@ version = "14.0.6+3"
 
 [[deps.libcrossterm_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "9624de214cf40a26e9d8aca5138e74ce7a1ea364"
+git-tree-sha1 = "501284ee0f9590bb3d42cf44b089d33e2a2dd475"
 uuid = "7fdd842c-1c35-5047-b6c4-5b8c94d478bc"
-version = "0.3.0+0"
+version = "0.4.0+0"
 
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]

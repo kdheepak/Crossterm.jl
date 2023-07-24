@@ -2,7 +2,7 @@
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "689be28a62c3af577c89ca7db569c47c00e44203"
+project_hash = "aa3764c7109f541781725e29ff511425f59489e6"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -87,6 +87,6 @@ uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [[deps.libcrossterm_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "9624de214cf40a26e9d8aca5138e74ce7a1ea364"
+git-tree-sha1 = "501284ee0f9590bb3d42cf44b089d33e2a2dd475"
 uuid = "7fdd842c-1c35-5047-b6c4-5b8c94d478bc"
-version = "0.3.0+0"
+version = "0.4.0+0"
