@@ -205,7 +205,7 @@ end
 """
 Poll the terminal for input events for duration (seconds)
 """
-poll(duration::Integer = 0) = poll(Second(duration))
+poll(duration::Integer) = poll(Second(duration))
 
 """
 Push or pop the keyboard enhancement flags.
