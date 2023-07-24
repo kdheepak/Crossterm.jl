@@ -210,12 +210,96 @@ poll(duration::Integer) = poll(Second(duration))
 """
 Push or pop the keyboard enhancement flags.
 """
-keyboard_enchancement_flags(switch = true) =
+keyboard_enhancement_flags(switch = true; flags = 0b0000_1000 | 0b0000_0100 | 0b0000_0010 | 0b0000_0001) =
   if switch
-    @crossterm_call crossterm_event_push_keyboard_enhancement_flags()
+    @crossterm_call crossterm_event_push_keyboard_enhancement_flags(flags)
   else
     @crossterm_call crossterm_event_pop_keyboard_enhancement_flags()
   end
+
+@enumx EventTag::UInt32 begin
+  FOCUS_GAINED = 0
+  FOCUS_LOST = 1
+  KEY = 2
+  MOUSE = 3
+  PASTE = 4
+  RESIZE = 5
+end
+
+function EventTag.T(tag::String)
+  if tag == "Key"
+    EventTag.KEY
+  elseif tag == "Mouse"
+    EventTag.MOUSE
+  elseif tag == "FocusLost"
+    EventTag.FOCUS_LOST
+  elseif tag == "FocusGained"
+    EventTag.FOCUS_GAINED
+  elseif tag == "Paste"
+    EventTag.PASTE
+  elseif tag == "Resize"
+    EventTag.RESIZE
+  end
+end
+
+struct Event{T}
+  tag::EventTag.T
+  data::T
+end
+
+struct MouseEvent
+  kind::String
+  column::Int
+  row::Int
+  modifiers::Vector{String}
+end
+
+struct KeyEvent
+  code::String
+  modifiers::Vector{String}
+  kind::String
+  state::Vector{String}
+end
+
+function _modifiers(value)
+  SHIFT = 1
+  CONTROL = 2
+  ALT = 4
+  SUPER = 8
+  HYPER = 16
+  META = 32
+  NONE = 0
+  modifiers = Dict("SHIFT" => SHIFT, "CONTROL" => CONTROL, "ALT" => ALT, "SUPER" => SUPER, "HYPER" => HYPER, "META" => META)
+
+  active_modifiers = String[]
+
+  for (modifier, bit_value) in modifiers
+    if value & bit_value == bit_value
+      push!(active_modifiers, modifier)
+    end
+  end
+
+  return active_modifiers
+end
+
+function _state(value)
+  KEYPAD = 1
+  CAPS_LOCK = 8
+  NUM_LOCK = 8
+  NONE = 0
+
+  event_states = Dict("KEYPAD" => KEYPAD, "CAPS_LOCK" => CAPS_LOCK, "NUM_LOCK" => NUM_LOCK)
+
+  active_states = String[]
+
+  for (event_state, bit_value) in event_states
+    if value & bit_value == bit_value
+      push!(active_states, event_state)
+    end
+  end
+
+  return active_states
+end
 
 """
 Read an event from the terminal.
@@ -224,7 +308,37 @@ function read()
   ptr = LibCrossterm.crossterm_event_read()
   s = unsafe_string(ptr)
   LibCrossterm.crossterm_free_c_char(ptr)
-  JSON3.read(s, Dict)
+  d = JSON3.read(s, Dict)
+  tag = EventTag.T(only(keys(d)))
+  data = only(values(d))
+  data = if tag == EventTag.KEY
+    c = data["code"]
+    @show data
+    code = if c isa Dict && only(keys(c)) == "Char"
+      c["Char"]
+    elseif c isa Dict && only(keys(c)) == "F"
+      c = c["F"]
+      "F$c"
+    else
+      c
+    end
+    modifiers = _modifiers(data["modifiers"]["bits"])
+    kind = data["kind"]
+    state = _state(data["state"]["bits"])
+    KeyEvent(code, modifiers, kind, state)
+  elseif tag == EventTag.MOUSE
+    kind = data["kind"]
+    if kind isa Dict
+      kind = "$(only(keys(kind)))$(only(values(kind)))"
+    end
+    column = data["column"]
+    row = data["row"]
+    modifiers = _modifiers(data["modifiers"]["bits"])
+    MouseEvent(kind, column, row, modifiers)
+  else
+    data
+  end
+  Event(tag, data)
 end
 
 """
