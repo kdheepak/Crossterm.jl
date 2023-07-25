@@ -324,7 +324,6 @@ function read()
   data = only(values(d))
   data = if tag == EventTag.KEY
     c = data["code"]
-    @show data
     code = if c isa Dict && only(keys(c)) == "Char"
       c["Char"]
     elseif c isa Dict && only(keys(c)) == "F"
