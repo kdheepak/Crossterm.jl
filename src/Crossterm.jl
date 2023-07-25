@@ -107,6 +107,7 @@ Different ways to clear the terminal buffer.
   CURRENT_LINE = 4
   UNTIL_NEW_LINE = 5
 end
+Base.cconvert(::Type{LibCrossterm.crossterm_ClearType}, v::ClearType.T) = LibCrossterm.crossterm_ClearType(UInt32(v))
 
 """
 Clear the terminal screen or a part of it.
@@ -114,6 +115,16 @@ Clear the terminal screen or a part of it.
 function clear(ct::ClearType.T = ClearType.ALL)
   @crossterm_call crossterm_terminal_clear(ct)
 end
+
+"""
+Show or hide cursor in the terminal.
+"""
+cursor(switch = true) =
+  if switch
+    show()
+  else
+    hide()
+  end
 
 """
 Enable or disable raw mode in the terminal.
