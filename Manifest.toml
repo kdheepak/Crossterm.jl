@@ -87,6 +87,6 @@ uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [[deps.libcrossterm_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "3e4fbd15b49d32d797003b2cfa97636040f3446a"
+git-tree-sha1 = "11b59fb91c9221d722b6ead69e250de82bb177be"
 uuid = "7fdd842c-1c35-5047-b6c4-5b8c94d478bc"
-version = "0.6.1+0"
+version = "0.6.2+0"
