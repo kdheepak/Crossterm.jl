@@ -19,7 +19,7 @@ end
 
 Represents extra state about the key event.
 
-**Note:** This state can only be read if [`KeyboardEnhancementFlags::DISAMBIGUATE\\_ESCAPE\\_CODES`] has been enabled with [`PushKeyboardEnhancementFlags`].
+**Note:** This state can only be read if [`KeyboardEnhancementFlags::DISAMBIGUATE\\_ESCAPE\\_CODES`] has been enabled with [[`crossterm_event_push_keyboard_enhancement_flags`](@ref)].
 """
 mutable struct crossterm_KeyEventState
   bits::UInt8
@@ -150,16 +150,6 @@ Represents a mouse button.
   CROSSTERM_MOUSE_BUTTON_MIDDLE = 2
 end
 
-"""
-    crossterm_CursorPosition
-
-CursorPosition struct
-"""
-mutable struct crossterm_CursorPosition
-  column::UInt16
-  row::UInt16
-end
-
 @enum crossterm_Color_Tag::UInt32 begin
   CROSSTERM_COLOR_RESET = 0
   CROSSTERM_COLOR_BLACK = 1
@@ -208,16 +198,6 @@ end
 
 function Base.setproperty!(x::Ptr{crossterm_Color}, f::Symbol, v)
   unsafe_store!(getproperty(x, f), v)
-end
-
-"""
-    crossterm_TerminalSize
-
-TerminalSize
-"""
-mutable struct crossterm_TerminalSize
-  width::UInt16
-  height::UInt16
 end
 
 """
@@ -351,14 +331,9 @@ Some platforms/terminals does not report all key modifiers combinations for all 
 """
 mutable struct crossterm_MouseEvent
   kind::crossterm_MouseEventKind
-  column::UInt16
+  col::UInt16
   row::UInt16
   modifiers::crossterm_KeyModifiers
-end
-
-mutable struct crossterm_CString
-  str::Ptr{Cchar}
-  len::Cint
 end
 
 """
@@ -388,7 +363,7 @@ function Base.getproperty(x::Ptr{crossterm_Event}, f::Symbol)
   f === :tag && return Ptr{crossterm_Event_Tag}(x + 0)
   f === :key && return Ptr{crossterm_KeyEvent}(x + 8)
   f === :mouse && return Ptr{crossterm_MouseEvent}(x + 8)
-  f === :paste && return Ptr{crossterm_CString}(x + 8)
+  f === :paste && return Ptr{Ptr{Cchar}}(x + 8)
   f === :RESIZE && return Ptr{crossterm_Resize_Body}(x + 8)
   return getfield(x, f)
 end
@@ -404,15 +379,6 @@ function Base.setproperty!(x::Ptr{crossterm_Event}, f::Symbol, v)
   unsafe_store!(getproperty(x, f), v)
 end
 
-"""
-    crossterm_clear_last_error()
-
-### Prototype
-
-```c
-void crossterm_clear_last_error(void);
-```
-"""
 function crossterm_clear_last_error()
   @ccall libcrossterm.crossterm_clear_last_error()::Cvoid
 end
@@ -421,12 +387,6 @@ end
     crossterm_cursor_disable_blinking()
 
 Disables blinking of the terminal cursor.
-
-### Prototype
-
-```c
-int crossterm_cursor_disable_blinking(void);
-```
 """
 function crossterm_cursor_disable_blinking()
   @ccall libcrossterm.crossterm_cursor_disable_blinking()::Cint
@@ -436,12 +396,6 @@ end
     crossterm_cursor_enable_blinking()
 
 Enables blinking of the terminal cursor.
-
-### Prototype
-
-```c
-int crossterm_cursor_enable_blinking(void);
-```
 """
 function crossterm_cursor_enable_blinking()
   @ccall libcrossterm.crossterm_cursor_enable_blinking()::Cint
@@ -451,12 +405,6 @@ end
     crossterm_cursor_hide()
 
 Hides the terminal cursor.
-
-### Prototype
-
-```c
-int crossterm_cursor_hide(void);
-```
 """
 function crossterm_cursor_hide()
   @ccall libcrossterm.crossterm_cursor_hide()::Cint
@@ -466,74 +414,55 @@ end
     crossterm_cursor_move_down(rows)
 
 Moves the terminal cursor a given number of rows down.
-
-### Prototype
-
-```c
-int crossterm_cursor_move_down(uint16_t rows);
-```
 """
 function crossterm_cursor_move_down(rows)
   @ccall libcrossterm.crossterm_cursor_move_down(rows::UInt16)::Cint
 end
 
 """
-    crossterm_cursor_move_left(columns)
+    crossterm_cursor_move_left(cols)
 
-Moves the terminal cursor a given number of columns to the left.
-
-### Prototype
-
-```c
-int crossterm_cursor_move_left(uint16_t columns);
-```
+Moves the terminal cursor a given number of cols to the left.
 """
-function crossterm_cursor_move_left(columns)
-  @ccall libcrossterm.crossterm_cursor_move_left(columns::UInt16)::Cint
+function crossterm_cursor_move_left(cols)
+  @ccall libcrossterm.crossterm_cursor_move_left(cols::UInt16)::Cint
 end
 
 """
-    crossterm_cursor_move_right(columns)
+    crossterm_cursor_move_right(cols)
 
-Moves the terminal cursor a given number of columns to the right.
-
-### Prototype
-
-```c
-int crossterm_cursor_move_right(uint16_t columns);
-```
+Moves the terminal cursor a given number of cols to the right.
 """
-function crossterm_cursor_move_right(columns)
-  @ccall libcrossterm.crossterm_cursor_move_right(columns::UInt16)::Cint
+function crossterm_cursor_move_right(cols)
+  @ccall libcrossterm.crossterm_cursor_move_right(cols::UInt16)::Cint
 end
 
 """
-    crossterm_cursor_move_to_column(column)
+    crossterm_cursor_move_to(col, row)
 
-Moves the terminal cursor to the given column on the current row.
+Moves the terminal cursor to the given position (col, row).
 
-### Prototype
-
-```c
-int crossterm_cursor_move_to_column(uint16_t column);
-```
+# Notes * Top left cell is represented as `0,0`.
 """
-function crossterm_cursor_move_to_column(column)
-  @ccall libcrossterm.crossterm_cursor_move_to_column(column::UInt16)::Cint
+function crossterm_cursor_move_to(col, row)
+  @ccall libcrossterm.crossterm_cursor_move_to(col::UInt16, row::UInt16)::Cint
+end
+
+"""
+    crossterm_cursor_move_to_column(col)
+
+Moves the terminal cursor to the given col on the current row.
+"""
+function crossterm_cursor_move_to_column(col)
+  @ccall libcrossterm.crossterm_cursor_move_to_column(col::UInt16)::Cint
 end
 
 """
     crossterm_cursor_move_to_next_line(n)
 
-Moves the terminal cursor down the given number of lines and moves it to the first column.
+Moves the terminal cursor down the given number of lines and moves it to the first col.
 
 # Notes * This command is 1 based, meaning `[`crossterm_cursor_move_to_next_line`](@ref)(1)` moves to the next line. * Most terminals default 0 argument to 1.
-
-### Prototype
-
-```c
-int crossterm_cursor_move_to_next_line(uint16_t n);
-```
 """
 function crossterm_cursor_move_to_next_line(n)
   @ccall libcrossterm.crossterm_cursor_move_to_next_line(n::UInt16)::Cint
@@ -542,13 +471,7 @@ end
 """
     crossterm_cursor_move_to_previous_line(n)
 
-Moves the terminal cursor up the given number of lines and moves it to the first column.
-
-### Prototype
-
-```c
-int crossterm_cursor_move_to_previous_line(uint16_t n);
-```
+Moves the terminal cursor up the given number of lines and moves it to the first col.
 """
 function crossterm_cursor_move_to_previous_line(n)
   @ccall libcrossterm.crossterm_cursor_move_to_previous_line(n::UInt16)::Cint
@@ -557,13 +480,7 @@ end
 """
     crossterm_cursor_move_to_row(row)
 
-Moves the terminal cursor to the given row on the current column.
-
-### Prototype
-
-```c
-int crossterm_cursor_move_to_row(uint16_t row);
-```
+Moves the terminal cursor to the given row on the current col.
 """
 function crossterm_cursor_move_to_row(row)
   @ccall libcrossterm.crossterm_cursor_move_to_row(row::UInt16)::Cint
@@ -573,74 +490,37 @@ end
     crossterm_cursor_move_up(rows)
 
 Moves the terminal cursor a given number of rows up.
-
-### Prototype
-
-```c
-int crossterm_cursor_move_up(uint16_t rows);
-```
 """
 function crossterm_cursor_move_up(rows)
   @ccall libcrossterm.crossterm_cursor_move_up(rows::UInt16)::Cint
 end
 
 """
-    crossterm_cursor_moveto(x, y)
+    crossterm_cursor_position(col, row)
 
-Moves the terminal cursor to the given position (column, row).
+Get cursor position (col, row)
 
 # Notes * Top left cell is represented as `0,0`.
-
-### Prototype
-
-```c
-int crossterm_cursor_moveto(uint16_t x, uint16_t y);
-```
 """
-function crossterm_cursor_moveto(x, y)
-  @ccall libcrossterm.crossterm_cursor_moveto(x::UInt16, y::UInt16)::Cint
+function crossterm_cursor_position(col, row)
+  @ccall libcrossterm.crossterm_cursor_position(col::Ptr{UInt16}, row::Ptr{UInt16})::Cint
 end
 
 """
-    crossterm_cursor_position_get(pos)
+    crossterm_cursor_position_set(col, row)
 
-Get cursor position (column, row)
+Set cursor position (col, row)
 
-### Prototype
-
-```c
-int crossterm_cursor_position_get(crossterm_CursorPosition *pos);
-```
+# Notes * Top left cell is represented as `0,0`.
 """
-function crossterm_cursor_position_get(pos)
-  @ccall libcrossterm.crossterm_cursor_position_get(pos::Ptr{crossterm_CursorPosition})::Cint
-end
-
-"""
-    crossterm_cursor_position_set(pos)
-
-Set cursor position (column, row)
-
-### Prototype
-
-```c
-int crossterm_cursor_position_set(crossterm_CursorPosition pos);
-```
-"""
-function crossterm_cursor_position_set(pos)
-  @ccall libcrossterm.crossterm_cursor_position_set(pos::crossterm_CursorPosition)::Cint
+function crossterm_cursor_position_set(col, row)
+  @ccall libcrossterm.crossterm_cursor_position_set(col::UInt16, row::UInt16)::Cint
 end
 
 """
     crossterm_cursor_restore_position()
 
 Restores the saved terminal cursor position.
-
-### Prototype
-
-```c
-int crossterm_cursor_restore_position(void);
-```
 """
 function crossterm_cursor_restore_position()
   @ccall libcrossterm.crossterm_cursor_restore_position()::Cint
@@ -650,207 +530,96 @@ end
     crossterm_cursor_save_position()
 
 Saves the current terminal cursor position.
-
-### Prototype
-
-```c
-int crossterm_cursor_save_position(void);
-```
 """
 function crossterm_cursor_save_position()
   @ccall libcrossterm.crossterm_cursor_save_position()::Cint
 end
 
 """
-    crossterm_cursor_set_style(cursor_style)
-
-Sets the style of the cursor.
-
-### Prototype
-
-```c
-int crossterm_cursor_set_style(crossterm_CursorStyle cursor_style);
-```
-"""
-function crossterm_cursor_set_style(cursor_style)
-  @ccall libcrossterm.crossterm_cursor_set_style(cursor_style::crossterm_CursorStyle)::Cint
-end
-
-"""
-    crossterm_cursor_set_style_blinking_bar()
-
-Sets the style of the cursor to a blinking bar.
-
-### Prototype
-
-```c
-int crossterm_cursor_set_style_blinking_bar(void);
-```
-"""
-function crossterm_cursor_set_style_blinking_bar()
-  @ccall libcrossterm.crossterm_cursor_set_style_blinking_bar()::Cint
-end
-
-"""
-    crossterm_cursor_set_style_blinking_block()
-
-Sets the style of the cursor to a blinking block.
-
-### Prototype
-
-```c
-int crossterm_cursor_set_style_blinking_block(void);
-```
-"""
-function crossterm_cursor_set_style_blinking_block()
-  @ccall libcrossterm.crossterm_cursor_set_style_blinking_block()::Cint
-end
-
-"""
-    crossterm_cursor_set_style_blinking_underscore()
-
-Sets the style of the cursor to a blinking underscore.
-
-### Prototype
-
-```c
-int crossterm_cursor_set_style_blinking_underscore(void);
-```
-"""
-function crossterm_cursor_set_style_blinking_underscore()
-  @ccall libcrossterm.crossterm_cursor_set_style_blinking_underscore()::Cint
-end
-
-"""
-    crossterm_cursor_set_style_default_user_shape()
-
-Sets the style of the cursor to default user shape.
-
-### Prototype
-
-```c
-int crossterm_cursor_set_style_default_user_shape(void);
-```
-"""
-function crossterm_cursor_set_style_default_user_shape()
-  @ccall libcrossterm.crossterm_cursor_set_style_default_user_shape()::Cint
-end
-
-"""
-    crossterm_cursor_set_style_steady_bar()
-
-Sets the style of the cursor to a steady bar.
-
-### Prototype
-
-```c
-int crossterm_cursor_set_style_steady_bar(void);
-```
-"""
-function crossterm_cursor_set_style_steady_bar()
-  @ccall libcrossterm.crossterm_cursor_set_style_steady_bar()::Cint
-end
-
-"""
-    crossterm_cursor_set_style_steady_block()
-
-Sets the style of the cursor to a steady block.
-
-### Prototype
-
-```c
-int crossterm_cursor_set_style_steady_block(void);
-```
-"""
-function crossterm_cursor_set_style_steady_block()
-  @ccall libcrossterm.crossterm_cursor_set_style_steady_block()::Cint
-end
-
-"""
-    crossterm_cursor_set_style_steady_underscore()
-
-Sets the style of the cursor to a steady underscore.
-
-### Prototype
-
-```c
-int crossterm_cursor_set_style_steady_underscore(void);
-```
-"""
-function crossterm_cursor_set_style_steady_underscore()
-  @ccall libcrossterm.crossterm_cursor_set_style_steady_underscore()::Cint
-end
-
-"""
     crossterm_cursor_show()
 
 Shows the terminal cursor.
-
-### Prototype
-
-```c
-int crossterm_cursor_show(void);
-```
 """
 function crossterm_cursor_show()
   @ccall libcrossterm.crossterm_cursor_show()::Cint
 end
 
 """
-    crossterm_disable_line_wrap()
+    crossterm_cursor_style(cursor_style)
 
-Disables line wrapping.
-
-### Prototype
-
-```c
-int crossterm_disable_line_wrap(void);
-```
+Sets the style of the cursor.
 """
-function crossterm_disable_line_wrap()
-  @ccall libcrossterm.crossterm_disable_line_wrap()::Cint
+function crossterm_cursor_style(cursor_style)
+  @ccall libcrossterm.crossterm_cursor_style(cursor_style::crossterm_CursorStyle)::Cint
 end
 
 """
-    crossterm_enable_line_wrap()
+    crossterm_cursor_style_blinking_bar()
 
-Enables line wrapping.
-
-### Prototype
-
-```c
-int crossterm_enable_line_wrap(void);
-```
+Sets the style of the cursor to a blinking bar.
 """
-function crossterm_enable_line_wrap()
-  @ccall libcrossterm.crossterm_enable_line_wrap()::Cint
+function crossterm_cursor_style_blinking_bar()
+  @ccall libcrossterm.crossterm_cursor_style_blinking_bar()::Cint
 end
 
 """
-    crossterm_enter_alternate_screen()
+    crossterm_cursor_style_blinking_block()
 
-Enters alternate screen.
-
-### Prototype
-
-```c
-int crossterm_enter_alternate_screen(void);
-```
+Sets the style of the cursor to a blinking block.
 """
-function crossterm_enter_alternate_screen()
-  @ccall libcrossterm.crossterm_enter_alternate_screen()::Cint
+function crossterm_cursor_style_blinking_block()
+  @ccall libcrossterm.crossterm_cursor_style_blinking_block()::Cint
+end
+
+"""
+    crossterm_cursor_style_blinking_underscore()
+
+Sets the style of the cursor to a blinking underscore.
+"""
+function crossterm_cursor_style_blinking_underscore()
+  @ccall libcrossterm.crossterm_cursor_style_blinking_underscore()::Cint
+end
+
+"""
+    crossterm_cursor_style_default_user_shape()
+
+Sets the style of the cursor to default user shape.
+"""
+function crossterm_cursor_style_default_user_shape()
+  @ccall libcrossterm.crossterm_cursor_style_default_user_shape()::Cint
+end
+
+"""
+    crossterm_cursor_style_steady_bar()
+
+Sets the style of the cursor to a steady bar.
+"""
+function crossterm_cursor_style_steady_bar()
+  @ccall libcrossterm.crossterm_cursor_style_steady_bar()::Cint
+end
+
+"""
+    crossterm_cursor_style_steady_block()
+
+Sets the style of the cursor to a steady block.
+"""
+function crossterm_cursor_style_steady_block()
+  @ccall libcrossterm.crossterm_cursor_style_steady_block()::Cint
+end
+
+"""
+    crossterm_cursor_style_steady_underscore()
+
+Sets the style of the cursor to a steady underscore.
+"""
+function crossterm_cursor_style_steady_underscore()
+  @ccall libcrossterm.crossterm_cursor_style_steady_underscore()::Cint
 end
 
 """
     crossterm_event_disable_bracketed_paste()
 
 Disables bracketed paste mode.
-
-### Prototype
-
-```c
-int crossterm_event_disable_bracketed_paste(void);
-```
 """
 function crossterm_event_disable_bracketed_paste()
   @ccall libcrossterm.crossterm_event_disable_bracketed_paste()::Cint
@@ -860,12 +629,6 @@ end
     crossterm_event_disable_focus_change()
 
 Disable focus event emission.
-
-### Prototype
-
-```c
-int crossterm_event_disable_focus_change(void);
-```
 """
 function crossterm_event_disable_focus_change()
   @ccall libcrossterm.crossterm_event_disable_focus_change()::Cint
@@ -875,12 +638,6 @@ end
     crossterm_event_disable_mouse_capture()
 
 Disable mouse event capturing.
-
-### Prototype
-
-```c
-int crossterm_event_disable_mouse_capture(void);
-```
 """
 function crossterm_event_disable_mouse_capture()
   @ccall libcrossterm.crossterm_event_disable_mouse_capture()::Cint
@@ -894,12 +651,6 @@ Enables [bracketed paste mode](https://en.wikipedia.org/wiki/Bracketed-paste).
 It should be paired with [[`crossterm_event_disable_bracketed_paste`](@ref)] at the end of execution.
 
 This is not supported in older Windows terminals without [virtual terminal sequences](https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences).
-
-### Prototype
-
-```c
-int crossterm_event_enable_bracketed_paste(void);
-```
 """
 function crossterm_event_enable_bracketed_paste()
   @ccall libcrossterm.crossterm_event_enable_bracketed_paste()::Cint
@@ -913,12 +664,6 @@ Enable focus event emission.
 It should be paired with [[`crossterm_event_disable_focus_change`](@ref)] at the end of execution.
 
 Focus events can be captured with [[`crossterm_event_read`](@ref)].
-
-### Prototype
-
-```c
-int crossterm_event_enable_focus_change(void);
-```
 """
 function crossterm_event_enable_focus_change()
   @ccall libcrossterm.crossterm_event_enable_focus_change()::Cint
@@ -928,12 +673,6 @@ end
     crossterm_event_enable_mouse_capture()
 
 Enable mouse event capturing.
-
-### Prototype
-
-```c
-int crossterm_event_enable_mouse_capture(void);
-```
 """
 function crossterm_event_enable_mouse_capture()
   @ccall libcrossterm.crossterm_event_enable_mouse_capture()::Cint
@@ -944,19 +683,13 @@ end
 
 Checks if there is an [`Event`] available.
 
-Returns `true` if an [`Event`] is available otherwise it returns `false`.
+Returns `1` if an [`Event`] is available, it returns `0` if no [`Event`] is available, returns -1 if error has occurred.
 
-`true` guarantees that subsequent call to the [[`crossterm_event_read`](@ref)] function won't block.
+When it returns `1`, that guarantees that subsequent call to the [[`crossterm_event_read`](@ref)] function won't block.
 
 # Arguments
 
   - `timeout_secs` - maximum waiting time for event availability * `timeout_nanos` - maximum waiting time for event availability
-
-### Prototype
-
-```c
-int crossterm_event_poll(uint64_t secs, uint32_t nanos);
-```
 """
 function crossterm_event_poll(secs, nanos)
   @ccall libcrossterm.crossterm_event_poll(secs::UInt64, nanos::UInt32)::Cint
@@ -966,12 +699,6 @@ end
     crossterm_event_pop_keyboard_enhancement_flags()
 
 Disables extra kinds of keyboard events.
-
-### Prototype
-
-```c
-int crossterm_event_pop_keyboard_enhancement_flags(void);
-```
 """
 function crossterm_event_pop_keyboard_enhancement_flags()
   @ccall libcrossterm.crossterm_event_pop_keyboard_enhancement_flags()::Cint
@@ -981,12 +708,6 @@ end
     crossterm_event_push_keyboard_enhancement_flags(flags)
 
 Enables the [kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/), which adds extra information to keyboard events and removes ambiguity for modifier keys. It should be paired with [`crossterm_pop_keyboard_enhancement_flags`] at the end of execution.
-
-### Prototype
-
-```c
-int crossterm_event_push_keyboard_enhancement_flags(uint8_t flags);
-```
 """
 function crossterm_event_push_keyboard_enhancement_flags(flags)
   @ccall libcrossterm.crossterm_event_push_keyboard_enhancement_flags(flags::UInt8)::Cint
@@ -995,18 +716,25 @@ end
 """
     crossterm_event_read()
 
-Reads a single [`Event`] as a UTF-8 json string.
+Reads a single [`Event`] as a UTF-8 JSON string. If error occurs during read, error will be returned as a UTF-8 JSON string.
 
-This function blocks until an [`Event`] is available. Combine it with the [[`crossterm_event_poll`](@ref)] function to get non-blocking reads. User is responsible to free string. Use [[`crossterm_free_c_char`](@ref)] to free data
+This function blocks until an [`Event`] is available. Combine it with the [[`crossterm_event_poll`](@ref)] function to get non-blocking reads.
 
-### Prototype
-
-```c
-const char *crossterm_event_read(void);
-```
+Caller is responsible for memory associated with string buffer. Use [[`crossterm_free_c_char`](@ref)] to free data.
 """
 function crossterm_event_read()
   @ccall libcrossterm.crossterm_event_read()::Ptr{Cchar}
+end
+
+"""
+    crossterm_flush()
+
+Flush the stdout stream, ensuring that all intermediately buffered contents reach their destination.
+
+It is considered an error if not all bytes could be written due to I/O errors or EOF being reached.
+"""
+function crossterm_flush()
+  @ccall libcrossterm.crossterm_flush()::Cint
 end
 
 """
@@ -1015,12 +743,6 @@ end
 Frees data behind pointer to UTF-8 string allocated by this crate
 
 Null character is stored in the last location of buffer.
-
-### Prototype
-
-```c
-int crossterm_free_c_char(char *s);
-```
 """
 function crossterm_free_c_char(s)
   @ccall libcrossterm.crossterm_free_c_char(s::Ptr{Cchar})::Cint
@@ -1030,12 +752,6 @@ end
     crossterm_has_error()
 
 Check whether error has been set.
-
-### Prototype
-
-```c
-bool crossterm_has_error(void);
-```
 """
 function crossterm_has_error()
   @ccall libcrossterm.crossterm_has_error()::Bool
@@ -1045,12 +761,6 @@ end
     crossterm_last_error_length()
 
 Calculate the number of bytes in the last error's error message including a trailing `null` character. If there are no recent error, then this returns `0`.
-
-### Prototype
-
-```c
-int crossterm_last_error_length(void);
-```
 """
 function crossterm_last_error_length()
   @ccall libcrossterm.crossterm_last_error_length()::Cint
@@ -1061,129 +771,796 @@ end
 
 Return most recent error message into a UTF-8 string buffer.
 
-Null character is stored in the last location of buffer. Caller is responsible to memory associated with string buffer. Use [[`crossterm_free_c_char`](@ref)] to free data.
-
-### Prototype
-
-```c
-const char *crossterm_last_error_message(void);
-```
+Null character is stored in the last location of buffer. Caller is responsible for memory associated with string buffer. Use [[`crossterm_free_c_char`](@ref)] to free data.
 """
 function crossterm_last_error_message()
   @ccall libcrossterm.crossterm_last_error_message()::Ptr{Cchar}
 end
 
 """
-    crossterm_leave_alternate_screen()
-
-Leaves alternate screen.
-
-### Prototype
-
-```c
-int crossterm_leave_alternate_screen(void);
-```
-"""
-function crossterm_leave_alternate_screen()
-  @ccall libcrossterm.crossterm_leave_alternate_screen()::Cint
-end
-
-"""
     crossterm_sleep(seconds)
 
-Sleeps for `seconds` seconds
-
-### Prototype
-
-```c
-void crossterm_sleep(double seconds);
-```
+Sleeps for n seconds where n is the argument to this function
 """
 function crossterm_sleep(seconds)
   @ccall libcrossterm.crossterm_sleep(seconds::Cdouble)::Cvoid
 end
 
 """
+    crossterm_style_attribute(attr)
+
+Sets an attribute.
+
+See [`Attribute`] for more info.
+"""
+function crossterm_style_attribute(attr)
+  @ccall libcrossterm.crossterm_style_attribute(attr::crossterm_Attribute)::Cint
+end
+
+"""
+    crossterm_style_attribute_bold()
+
+Sets the `Bold` attribute.
+"""
+function crossterm_style_attribute_bold()
+  @ccall libcrossterm.crossterm_style_attribute_bold()::Cint
+end
+
+"""
+    crossterm_style_attribute_crossed_out()
+
+Sets the `CrossedOut` attribute.
+"""
+function crossterm_style_attribute_crossed_out()
+  @ccall libcrossterm.crossterm_style_attribute_crossed_out()::Cint
+end
+
+"""
+    crossterm_style_attribute_dim()
+
+Sets the `Dim` attribute.
+"""
+function crossterm_style_attribute_dim()
+  @ccall libcrossterm.crossterm_style_attribute_dim()::Cint
+end
+
+"""
+    crossterm_style_attribute_double_underlined()
+
+Sets the `DoubleUnderlined` attribute.
+"""
+function crossterm_style_attribute_double_underlined()
+  @ccall libcrossterm.crossterm_style_attribute_double_underlined()::Cint
+end
+
+"""
+    crossterm_style_attribute_fraktur()
+
+Sets the `Fraktur` attribute.
+"""
+function crossterm_style_attribute_fraktur()
+  @ccall libcrossterm.crossterm_style_attribute_fraktur()::Cint
+end
+
+"""
+    crossterm_style_attribute_hidden()
+
+Sets the `Hidden` attribute.
+"""
+function crossterm_style_attribute_hidden()
+  @ccall libcrossterm.crossterm_style_attribute_hidden()::Cint
+end
+
+"""
+    crossterm_style_attribute_italic()
+
+Sets the `Italic` attribute.
+"""
+function crossterm_style_attribute_italic()
+  @ccall libcrossterm.crossterm_style_attribute_italic()::Cint
+end
+
+"""
+    crossterm_style_attribute_no_blink()
+
+Sets the `NoBlink` attribute.
+"""
+function crossterm_style_attribute_no_blink()
+  @ccall libcrossterm.crossterm_style_attribute_no_blink()::Cint
+end
+
+"""
+    crossterm_style_attribute_no_bold()
+
+Sets the `NoBold` attribute.
+"""
+function crossterm_style_attribute_no_bold()
+  @ccall libcrossterm.crossterm_style_attribute_no_bold()::Cint
+end
+
+"""
+    crossterm_style_attribute_no_hidden()
+
+Sets the `NoHidden` attribute.
+"""
+function crossterm_style_attribute_no_hidden()
+  @ccall libcrossterm.crossterm_style_attribute_no_hidden()::Cint
+end
+
+"""
+    crossterm_style_attribute_no_italic()
+
+Sets the `NoItalic` attribute.
+"""
+function crossterm_style_attribute_no_italic()
+  @ccall libcrossterm.crossterm_style_attribute_no_italic()::Cint
+end
+
+"""
+    crossterm_style_attribute_no_reverse()
+
+Sets the `NoReverse` attribute.
+"""
+function crossterm_style_attribute_no_reverse()
+  @ccall libcrossterm.crossterm_style_attribute_no_reverse()::Cint
+end
+
+"""
+    crossterm_style_attribute_no_underline()
+
+Sets the `NoUnderline` attribute.
+"""
+function crossterm_style_attribute_no_underline()
+  @ccall libcrossterm.crossterm_style_attribute_no_underline()::Cint
+end
+
+"""
+    crossterm_style_attribute_normal_intensity()
+
+Sets the `NormalIntensity` attribute.
+"""
+function crossterm_style_attribute_normal_intensity()
+  @ccall libcrossterm.crossterm_style_attribute_normal_intensity()::Cint
+end
+
+"""
+    crossterm_style_attribute_not_crossed_out()
+
+Sets the `NotCrossedOut` attribute.
+"""
+function crossterm_style_attribute_not_crossed_out()
+  @ccall libcrossterm.crossterm_style_attribute_not_crossed_out()::Cint
+end
+
+"""
+    crossterm_style_attribute_rapid_blink()
+
+Sets the `RapidBlink` attribute.
+"""
+function crossterm_style_attribute_rapid_blink()
+  @ccall libcrossterm.crossterm_style_attribute_rapid_blink()::Cint
+end
+
+"""
+    crossterm_style_attribute_reset()
+
+Sets the `Reset` attribute.
+"""
+function crossterm_style_attribute_reset()
+  @ccall libcrossterm.crossterm_style_attribute_reset()::Cint
+end
+
+"""
+    crossterm_style_attribute_reverse()
+
+Sets the `Reverse` attribute.
+"""
+function crossterm_style_attribute_reverse()
+  @ccall libcrossterm.crossterm_style_attribute_reverse()::Cint
+end
+
+"""
+    crossterm_style_attribute_slow_blink()
+
+Sets the `SlowBlink` attribute.
+"""
+function crossterm_style_attribute_slow_blink()
+  @ccall libcrossterm.crossterm_style_attribute_slow_blink()::Cint
+end
+
+"""
+    crossterm_style_attribute_undercurled()
+
+Sets the `Undercurled` attribute.
+"""
+function crossterm_style_attribute_undercurled()
+  @ccall libcrossterm.crossterm_style_attribute_undercurled()::Cint
+end
+
+"""
+    crossterm_style_attribute_underdashed()
+
+Sets the `Underdashed` attribute.
+"""
+function crossterm_style_attribute_underdashed()
+  @ccall libcrossterm.crossterm_style_attribute_underdashed()::Cint
+end
+
+"""
+    crossterm_style_attribute_underdotted()
+
+Sets the `Underdotted` attribute.
+"""
+function crossterm_style_attribute_underdotted()
+  @ccall libcrossterm.crossterm_style_attribute_underdotted()::Cint
+end
+
+"""
+    crossterm_style_attribute_underlined()
+
+Sets the `Underlined` attribute.
+"""
+function crossterm_style_attribute_underlined()
+  @ccall libcrossterm.crossterm_style_attribute_underlined()::Cint
+end
+
+"""
+    crossterm_style_background_color(color)
+
+Sets the the background color.
+
+See [`Color`] for more info.
+"""
+function crossterm_style_background_color(color)
+  @ccall libcrossterm.crossterm_style_background_color(color::crossterm_Color)::Cint
+end
+
+"""
+    crossterm_style_background_color_ansi(value)
+
+Sets the the background color to an ANSI value.
+"""
+function crossterm_style_background_color_ansi(value)
+  @ccall libcrossterm.crossterm_style_background_color_ansi(value::UInt8)::Cint
+end
+
+"""
+    crossterm_style_background_color_black()
+
+Sets the the background color to Black.
+"""
+function crossterm_style_background_color_black()
+  @ccall libcrossterm.crossterm_style_background_color_black()::Cint
+end
+
+"""
+    crossterm_style_background_color_blue()
+
+Sets the the background color to Blue.
+"""
+function crossterm_style_background_color_blue()
+  @ccall libcrossterm.crossterm_style_background_color_blue()::Cint
+end
+
+"""
+    crossterm_style_background_color_cyan()
+
+Sets the the background color to Cyan.
+"""
+function crossterm_style_background_color_cyan()
+  @ccall libcrossterm.crossterm_style_background_color_cyan()::Cint
+end
+
+"""
+    crossterm_style_background_color_dark_blue()
+
+Sets the the background color to DarkBlue.
+"""
+function crossterm_style_background_color_dark_blue()
+  @ccall libcrossterm.crossterm_style_background_color_dark_blue()::Cint
+end
+
+"""
+    crossterm_style_background_color_dark_cyan()
+
+Sets the the background color to DarkCyan.
+"""
+function crossterm_style_background_color_dark_cyan()
+  @ccall libcrossterm.crossterm_style_background_color_dark_cyan()::Cint
+end
+
+"""
+    crossterm_style_background_color_dark_green()
+
+Sets the the background color to DarkGreen.
+"""
+function crossterm_style_background_color_dark_green()
+  @ccall libcrossterm.crossterm_style_background_color_dark_green()::Cint
+end
+
+"""
+    crossterm_style_background_color_dark_grey()
+
+Sets the the background color to DarkGrey.
+"""
+function crossterm_style_background_color_dark_grey()
+  @ccall libcrossterm.crossterm_style_background_color_dark_grey()::Cint
+end
+
+"""
+    crossterm_style_background_color_dark_magenta()
+
+Sets the the background color to DarkMagenta.
+"""
+function crossterm_style_background_color_dark_magenta()
+  @ccall libcrossterm.crossterm_style_background_color_dark_magenta()::Cint
+end
+
+"""
+    crossterm_style_background_color_dark_red()
+
+Sets the the background color to DarkRed.
+"""
+function crossterm_style_background_color_dark_red()
+  @ccall libcrossterm.crossterm_style_background_color_dark_red()::Cint
+end
+
+"""
+    crossterm_style_background_color_dark_yellow()
+
+Sets the the background color to DarkYellow.
+"""
+function crossterm_style_background_color_dark_yellow()
+  @ccall libcrossterm.crossterm_style_background_color_dark_yellow()::Cint
+end
+
+"""
+    crossterm_style_background_color_green()
+
+Sets the the background color to Green.
+"""
+function crossterm_style_background_color_green()
+  @ccall libcrossterm.crossterm_style_background_color_green()::Cint
+end
+
+"""
+    crossterm_style_background_color_grey()
+
+Sets the the background color to Grey.
+"""
+function crossterm_style_background_color_grey()
+  @ccall libcrossterm.crossterm_style_background_color_grey()::Cint
+end
+
+"""
+    crossterm_style_background_color_magenta()
+
+Sets the the background color to Magenta.
+"""
+function crossterm_style_background_color_magenta()
+  @ccall libcrossterm.crossterm_style_background_color_magenta()::Cint
+end
+
+"""
+    crossterm_style_background_color_red()
+
+Sets the the background color to Red.
+"""
+function crossterm_style_background_color_red()
+  @ccall libcrossterm.crossterm_style_background_color_red()::Cint
+end
+
+"""
+    crossterm_style_background_color_reset()
+
+Sets the the background color to Reset.
+"""
+function crossterm_style_background_color_reset()
+  @ccall libcrossterm.crossterm_style_background_color_reset()::Cint
+end
+
+"""
+    crossterm_style_background_color_rgb(r, g, b)
+
+Sets the the background color in RGB.
+"""
+function crossterm_style_background_color_rgb(r, g, b)
+  @ccall libcrossterm.crossterm_style_background_color_rgb(r::UInt8, g::UInt8, b::UInt8)::Cint
+end
+
+"""
+    crossterm_style_background_color_white()
+
+Sets the the background color to White.
+"""
+function crossterm_style_background_color_white()
+  @ccall libcrossterm.crossterm_style_background_color_white()::Cint
+end
+
+"""
+    crossterm_style_background_color_yellow()
+
+Sets the the background color to Yellow.
+"""
+function crossterm_style_background_color_yellow()
+  @ccall libcrossterm.crossterm_style_background_color_yellow()::Cint
+end
+
+"""
+    crossterm_style_foreground_color(color)
+
+Sets the the foreground color.
+
+See [`Color`] for more info.
+"""
+function crossterm_style_foreground_color(color)
+  @ccall libcrossterm.crossterm_style_foreground_color(color::crossterm_Color)::Cint
+end
+
+"""
+    crossterm_style_foreground_color_ansi(value)
+
+Sets the the foreground color to an ANSI value.
+"""
+function crossterm_style_foreground_color_ansi(value)
+  @ccall libcrossterm.crossterm_style_foreground_color_ansi(value::UInt8)::Cint
+end
+
+"""
+    crossterm_style_foreground_color_black()
+
+Sets the the foreground color to Black.
+"""
+function crossterm_style_foreground_color_black()
+  @ccall libcrossterm.crossterm_style_foreground_color_black()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_blue()
+
+Sets the the foreground color to Blue.
+"""
+function crossterm_style_foreground_color_blue()
+  @ccall libcrossterm.crossterm_style_foreground_color_blue()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_cyan()
+
+Sets the the foreground color to Cyan.
+"""
+function crossterm_style_foreground_color_cyan()
+  @ccall libcrossterm.crossterm_style_foreground_color_cyan()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_dark_blue()
+
+Sets the the foreground color to DarkBlue.
+"""
+function crossterm_style_foreground_color_dark_blue()
+  @ccall libcrossterm.crossterm_style_foreground_color_dark_blue()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_dark_cyan()
+
+Sets the the foreground color to DarkCyan.
+"""
+function crossterm_style_foreground_color_dark_cyan()
+  @ccall libcrossterm.crossterm_style_foreground_color_dark_cyan()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_dark_green()
+
+Sets the the foreground color to DarkGreen.
+"""
+function crossterm_style_foreground_color_dark_green()
+  @ccall libcrossterm.crossterm_style_foreground_color_dark_green()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_dark_grey()
+
+Sets the the foreground color to DarkGrey.
+"""
+function crossterm_style_foreground_color_dark_grey()
+  @ccall libcrossterm.crossterm_style_foreground_color_dark_grey()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_dark_magenta()
+
+Sets the the foreground color to DarkMagenta.
+"""
+function crossterm_style_foreground_color_dark_magenta()
+  @ccall libcrossterm.crossterm_style_foreground_color_dark_magenta()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_dark_red()
+
+Sets the the foreground color to DarkRed.
+"""
+function crossterm_style_foreground_color_dark_red()
+  @ccall libcrossterm.crossterm_style_foreground_color_dark_red()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_dark_yellow()
+
+Sets the the foreground color to DarkYellow.
+"""
+function crossterm_style_foreground_color_dark_yellow()
+  @ccall libcrossterm.crossterm_style_foreground_color_dark_yellow()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_green()
+
+Sets the the foreground color to Green.
+"""
+function crossterm_style_foreground_color_green()
+  @ccall libcrossterm.crossterm_style_foreground_color_green()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_grey()
+
+Sets the the foreground color to Grey.
+"""
+function crossterm_style_foreground_color_grey()
+  @ccall libcrossterm.crossterm_style_foreground_color_grey()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_magenta()
+
+Sets the the foreground color to Magenta.
+"""
+function crossterm_style_foreground_color_magenta()
+  @ccall libcrossterm.crossterm_style_foreground_color_magenta()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_red()
+
+Sets the the foreground color to Red.
+"""
+function crossterm_style_foreground_color_red()
+  @ccall libcrossterm.crossterm_style_foreground_color_red()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_reset()
+
+Sets the the foreground color to Reset.
+"""
+function crossterm_style_foreground_color_reset()
+  @ccall libcrossterm.crossterm_style_foreground_color_reset()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_rgb(r, g, b)
+
+Sets the the foreground color in RGB.
+"""
+function crossterm_style_foreground_color_rgb(r, g, b)
+  @ccall libcrossterm.crossterm_style_foreground_color_rgb(r::UInt8, g::UInt8, b::UInt8)::Cint
+end
+
+"""
+    crossterm_style_foreground_color_white()
+
+Sets the the foreground color to White.
+"""
+function crossterm_style_foreground_color_white()
+  @ccall libcrossterm.crossterm_style_foreground_color_white()::Cint
+end
+
+"""
+    crossterm_style_foreground_color_yellow()
+
+Sets the the foreground color to Yellow.
+"""
+function crossterm_style_foreground_color_yellow()
+  @ccall libcrossterm.crossterm_style_foreground_color_yellow()::Cint
+end
+
+function crossterm_style_print(s)
+  @ccall libcrossterm.crossterm_style_print(s::Ptr{Cchar})::Cint
+end
+
+"""
     crossterm_style_reset_color()
 
 Resets the colors back to default.
-
-### Prototype
-
-```c
-int crossterm_style_reset_color(void);
-```
 """
 function crossterm_style_reset_color()
   @ccall libcrossterm.crossterm_style_reset_color()::Cint
 end
 
 """
-    crossterm_style_set_attribute(attr)
-
-Sets an attribute.
-
-See [`Attribute`] for more info.
-
-### Prototype
-
-```c
-int crossterm_style_set_attribute(crossterm_Attribute attr);
-```
-"""
-function crossterm_style_set_attribute(attr)
-  @ccall libcrossterm.crossterm_style_set_attribute(attr::crossterm_Attribute)::Cint
-end
-
-"""
-    crossterm_style_set_background_color(color)
-
-Sets the the background color.
-
-See [`Color`] for more info.
-
-### Prototype
-
-```c
-int crossterm_style_set_background_color(crossterm_Color color);
-```
-"""
-function crossterm_style_set_background_color(color)
-  @ccall libcrossterm.crossterm_style_set_background_color(color::crossterm_Color)::Cint
-end
-
-"""
-    crossterm_style_set_foreground_color(color)
-
-Sets the the foreground color.
-
-See [`Color`] for more info.
-
-### Prototype
-
-```c
-int crossterm_style_set_foreground_color(crossterm_Color color);
-```
-"""
-function crossterm_style_set_foreground_color(color)
-  @ccall libcrossterm.crossterm_style_set_foreground_color(color::crossterm_Color)::Cint
-end
-
-"""
-    crossterm_style_set_underline_color(color)
+    crossterm_style_underline_color(color)
 
 Sets the the underline color.
 
 See [`Color`] for more info.
-
-### Prototype
-
-```c
-int crossterm_style_set_underline_color(crossterm_Color color);
-```
 """
-function crossterm_style_set_underline_color(color)
-  @ccall libcrossterm.crossterm_style_set_underline_color(color::crossterm_Color)::Cint
+function crossterm_style_underline_color(color)
+  @ccall libcrossterm.crossterm_style_underline_color(color::crossterm_Color)::Cint
+end
+
+"""
+    crossterm_style_underline_color_ansi(value)
+
+Sets the the underline color to an ANSI value.
+"""
+function crossterm_style_underline_color_ansi(value)
+  @ccall libcrossterm.crossterm_style_underline_color_ansi(value::UInt8)::Cint
+end
+
+"""
+    crossterm_style_underline_color_black()
+
+Sets the the underline color to Black.
+"""
+function crossterm_style_underline_color_black()
+  @ccall libcrossterm.crossterm_style_underline_color_black()::Cint
+end
+
+"""
+    crossterm_style_underline_color_blue()
+
+Sets the the underline color to Blue.
+"""
+function crossterm_style_underline_color_blue()
+  @ccall libcrossterm.crossterm_style_underline_color_blue()::Cint
+end
+
+"""
+    crossterm_style_underline_color_cyan()
+
+Sets the the underline color to Cyan.
+"""
+function crossterm_style_underline_color_cyan()
+  @ccall libcrossterm.crossterm_style_underline_color_cyan()::Cint
+end
+
+"""
+    crossterm_style_underline_color_dark_blue()
+
+Sets the the underline color to DarkBlue.
+"""
+function crossterm_style_underline_color_dark_blue()
+  @ccall libcrossterm.crossterm_style_underline_color_dark_blue()::Cint
+end
+
+"""
+    crossterm_style_underline_color_dark_cyan()
+
+Sets the the underline color to DarkCyan.
+"""
+function crossterm_style_underline_color_dark_cyan()
+  @ccall libcrossterm.crossterm_style_underline_color_dark_cyan()::Cint
+end
+
+"""
+    crossterm_style_underline_color_dark_green()
+
+Sets the the underline color to DarkGreen.
+"""
+function crossterm_style_underline_color_dark_green()
+  @ccall libcrossterm.crossterm_style_underline_color_dark_green()::Cint
+end
+
+"""
+    crossterm_style_underline_color_dark_grey()
+
+Sets the the underline color to DarkGrey.
+"""
+function crossterm_style_underline_color_dark_grey()
+  @ccall libcrossterm.crossterm_style_underline_color_dark_grey()::Cint
+end
+
+"""
+    crossterm_style_underline_color_dark_magenta()
+
+Sets the the underline color to DarkMagenta.
+"""
+function crossterm_style_underline_color_dark_magenta()
+  @ccall libcrossterm.crossterm_style_underline_color_dark_magenta()::Cint
+end
+
+"""
+    crossterm_style_underline_color_dark_red()
+
+Sets the the underline color to DarkRed.
+"""
+function crossterm_style_underline_color_dark_red()
+  @ccall libcrossterm.crossterm_style_underline_color_dark_red()::Cint
+end
+
+"""
+    crossterm_style_underline_color_dark_yellow()
+
+Sets the the underline color to DarkYellow.
+"""
+function crossterm_style_underline_color_dark_yellow()
+  @ccall libcrossterm.crossterm_style_underline_color_dark_yellow()::Cint
+end
+
+"""
+    crossterm_style_underline_color_green()
+
+Sets the the underline color to Green.
+"""
+function crossterm_style_underline_color_green()
+  @ccall libcrossterm.crossterm_style_underline_color_green()::Cint
+end
+
+"""
+    crossterm_style_underline_color_grey()
+
+Sets the the underline color to Grey.
+"""
+function crossterm_style_underline_color_grey()
+  @ccall libcrossterm.crossterm_style_underline_color_grey()::Cint
+end
+
+"""
+    crossterm_style_underline_color_magenta()
+
+Sets the the underline color to Magenta.
+"""
+function crossterm_style_underline_color_magenta()
+  @ccall libcrossterm.crossterm_style_underline_color_magenta()::Cint
+end
+
+"""
+    crossterm_style_underline_color_red()
+
+Sets the the underline color to Red.
+"""
+function crossterm_style_underline_color_red()
+  @ccall libcrossterm.crossterm_style_underline_color_red()::Cint
+end
+
+"""
+    crossterm_style_underline_color_reset()
+
+Sets the the underline color to Reset.
+"""
+function crossterm_style_underline_color_reset()
+  @ccall libcrossterm.crossterm_style_underline_color_reset()::Cint
+end
+
+"""
+    crossterm_style_underline_color_rgb(r, g, b)
+
+Sets the the underline color in RGB.
+"""
+function crossterm_style_underline_color_rgb(r, g, b)
+  @ccall libcrossterm.crossterm_style_underline_color_rgb(r::UInt8, g::UInt8, b::UInt8)::Cint
+end
+
+"""
+    crossterm_style_underline_color_white()
+
+Sets the the underline color to White.
+"""
+function crossterm_style_underline_color_white()
+  @ccall libcrossterm.crossterm_style_underline_color_white()::Cint
+end
+
+"""
+    crossterm_style_underline_color_yellow()
+
+Sets the the underline color to Yellow.
+"""
+function crossterm_style_underline_color_yellow()
+  @ccall libcrossterm.crossterm_style_underline_color_yellow()::Cint
 end
 
 """
@@ -1200,12 +1577,6 @@ When rendering the screen of the terminal, the Emulator usually iterates through
 This mode attempts to mitigate that.
 
 When the synchronization mode is enabled following render calls will keep rendering the last rendered state. The terminal Emulator keeps processing incoming text and sequences. When the synchronized update mode is disabled again the renderer may fetch the latest screen buffer state again, effectively avoiding the tearing effect by unintentionally rendering in the middle a of an application screen update.
-
-### Prototype
-
-```c
-int crossterm_terminal_begin_synchronized_update(void);
-```
 """
 function crossterm_terminal_begin_synchronized_update()
   @ccall libcrossterm.crossterm_terminal_begin_synchronized_update()::Cint
@@ -1215,42 +1586,42 @@ end
     crossterm_terminal_clear(ct)
 
 Clear screen command.
-
-### Prototype
-
-```c
-int crossterm_terminal_clear(crossterm_ClearType ct);
-```
 """
 function crossterm_terminal_clear(ct)
   @ccall libcrossterm.crossterm_terminal_clear(ct::crossterm_ClearType)::Cint
 end
 
 """
+    crossterm_terminal_disable_line_wrap()
+
+Disables line wrapping.
+"""
+function crossterm_terminal_disable_line_wrap()
+  @ccall libcrossterm.crossterm_terminal_disable_line_wrap()::Cint
+end
+
+"""
     crossterm_terminal_disable_raw_mode()
 
 Disables raw mode.
-
-### Prototype
-
-```c
-int crossterm_terminal_disable_raw_mode(void);
-```
 """
 function crossterm_terminal_disable_raw_mode()
   @ccall libcrossterm.crossterm_terminal_disable_raw_mode()::Cint
 end
 
 """
+    crossterm_terminal_enable_line_wrap()
+
+Enables line wrapping.
+"""
+function crossterm_terminal_enable_line_wrap()
+  @ccall libcrossterm.crossterm_terminal_enable_line_wrap()::Cint
+end
+
+"""
     crossterm_terminal_enable_raw_mode()
 
 Enables raw mode.
-
-### Prototype
-
-```c
-int crossterm_terminal_enable_raw_mode(void);
-```
 """
 function crossterm_terminal_enable_raw_mode()
   @ccall libcrossterm.crossterm_terminal_enable_raw_mode()::Cint
@@ -1270,27 +1641,33 @@ When rendering the screen of the terminal, the Emulator usually iterates through
 This mode attempts to mitigate that.
 
 When the synchronization mode is enabled following render calls will keep rendering the last rendered state. The terminal Emulator keeps processing incoming text and sequences. When the synchronized update mode is disabled again the renderer may fetch the latest screen buffer state again, effectively avoiding the tearing effect by unintentionally rendering in the middle a of an application screen update.
-
-### Prototype
-
-```c
-int crossterm_terminal_end_synchronized_update(void);
-```
 """
 function crossterm_terminal_end_synchronized_update()
   @ccall libcrossterm.crossterm_terminal_end_synchronized_update()::Cint
 end
 
 """
+    crossterm_terminal_enter_alternate_screen()
+
+Enters alternate screen.
+"""
+function crossterm_terminal_enter_alternate_screen()
+  @ccall libcrossterm.crossterm_terminal_enter_alternate_screen()::Cint
+end
+
+"""
+    crossterm_terminal_leave_alternate_screen()
+
+Leaves alternate screen.
+"""
+function crossterm_terminal_leave_alternate_screen()
+  @ccall libcrossterm.crossterm_terminal_leave_alternate_screen()::Cint
+end
+
+"""
     crossterm_terminal_scroll_down(n)
 
 Scroll down command.
-
-### Prototype
-
-```c
-int crossterm_terminal_scroll_down(unsigned short n);
-```
 """
 function crossterm_terminal_scroll_down(n)
   @ccall libcrossterm.crossterm_terminal_scroll_down(n::Cushort)::Cint
@@ -1300,34 +1677,31 @@ end
     crossterm_terminal_scroll_up(n)
 
 Scroll up command.
-
-### Prototype
-
-```c
-int crossterm_terminal_scroll_up(unsigned short n);
-```
 """
 function crossterm_terminal_scroll_up(n)
   @ccall libcrossterm.crossterm_terminal_scroll_up(n::Cushort)::Cint
 end
 
 """
-    crossterm_terminal_set_size(columns, rows)
+    crossterm_terminal_size(width, height)
 
-Sets the terminal buffer size `(columns, rows)`.
-
-### Prototype
-
-```c
-int crossterm_terminal_set_size(uint16_t columns, uint16_t rows);
-```
+Get terminal size
 """
-function crossterm_terminal_set_size(columns, rows)
-  @ccall libcrossterm.crossterm_terminal_set_size(columns::UInt16, rows::UInt16)::Cint
+function crossterm_terminal_size(width, height)
+  @ccall libcrossterm.crossterm_terminal_size(width::Ptr{UInt16}, height::Ptr{UInt16})::Cint
 end
 
 """
-    crossterm_terminal_set_title(title)
+    crossterm_terminal_size_set(cols, rows)
+
+Sets the terminal buffer size `(cols, rows)`.
+"""
+function crossterm_terminal_size_set(cols, rows)
+  @ccall libcrossterm.crossterm_terminal_size_set(cols::UInt16, rows::UInt16)::Cint
+end
+
+"""
+    crossterm_terminal_title(title)
 
 Sets terminal title.
 
@@ -1336,30 +1710,9 @@ Sets terminal title.
 This function takes a raw pointer as argument. As such, the caller must ensure that: - The `title` pointer points to a valid null-terminated string. - This function borrows a slice to a valid null-terminated string and the memory referenced by `title` won't be deallocated or modified for the duration of the function call.. - The `title` pointer is correctly aligned and `title` points to an initialized memory.
 
 If these conditions are not met, the behavior is undefined.
-
-### Prototype
-
-```c
-int crossterm_terminal_set_title(const char *title);
-```
 """
-function crossterm_terminal_set_title(title)
-  @ccall libcrossterm.crossterm_terminal_set_title(title::Ptr{Cchar})::Cint
-end
-
-"""
-    crossterm_terminal_size(size)
-
-Get terminal size
-
-### Prototype
-
-```c
-int crossterm_terminal_size(crossterm_TerminalSize *size);
-```
-"""
-function crossterm_terminal_size(size)
-  @ccall libcrossterm.crossterm_terminal_size(size::Ptr{crossterm_TerminalSize})::Cint
+function crossterm_terminal_title(title)
+  @ccall libcrossterm.crossterm_terminal_title(title::Ptr{Cchar})::Cint
 end
 
 # Skipping MacroDefinition: crossterm_KeyModifiers_SHIFT ( crossterm_KeyModifiers ) { . bits = ( uint8_t ) 1 }

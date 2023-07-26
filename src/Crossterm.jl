@@ -8,6 +8,26 @@ include("LibCrossterm.jl")
 
 using .LibCrossterm
 
+const COLOR_MAP = Dict(
+  :reset => LibCrossterm.CROSSTERM_COLOR_RESET,
+  :black => LibCrossterm.CROSSTERM_COLOR_BLACK,
+  :dark_grey => LibCrossterm.CROSSTERM_COLOR_DARK_GREY,
+  :red => LibCrossterm.CROSSTERM_COLOR_RED,
+  :dark_red => LibCrossterm.CROSSTERM_COLOR_DARK_RED,
+  :green => LibCrossterm.CROSSTERM_COLOR_GREEN,
+  :dark_green => LibCrossterm.CROSSTERM_COLOR_DARK_GREEN,
+  :yellow => LibCrossterm.CROSSTERM_COLOR_YELLOW,
+  :dark_yellow => LibCrossterm.CROSSTERM_COLOR_DARK_YELLOW,
+  :blue => LibCrossterm.CROSSTERM_COLOR_BLUE,
+  :dark_blue => LibCrossterm.CROSSTERM_COLOR_DARK_BLUE,
+  :magenta => LibCrossterm.CROSSTERM_COLOR_MAGENTA,
+  :dark_magenta => LibCrossterm.CROSSTERM_COLOR_DARK_MAGENTA,
+  :cyan => LibCrossterm.CROSSTERM_COLOR_CYAN,
+  :dark_cyan => LibCrossterm.CROSSTERM_COLOR_DARK_CYAN,
+  :white => LibCrossterm.CROSSTERM_COLOR_WHITE,
+  :grey => LibCrossterm.CROSSTERM_COLOR_GREY,
+)
+
 macro crossterm_call(expr)
   esc(quote
     result = $(expr)
@@ -36,7 +56,7 @@ clear_last_error() = LibCrossterm.crossterm_clear_last_error()
 """
 Enable or disable line wrapping in the terminal.
 """
-line_wrap(switch = true) =
+line_wrap(switch::Bool = true) =
   if switch
     @crossterm_call crossterm_enable_line_wrap()
   else
@@ -46,7 +66,7 @@ line_wrap(switch = true) =
 """
 Enter or leave the alternate screen buffer of the terminal.
 """
-alternate_screen(switch = true) =
+alternate_screen(switch::Bool = true) =
   if switch
     @crossterm_call crossterm_enter_alternate_screen()
   else
@@ -88,11 +108,12 @@ reset_color() = @crossterm_call crossterm_style_reset_color()
   NOT_FRAMED_OR_ENCIRCLED = 26
   NOT_OVER_LINED = 27
 end
+Base.cconvert(::Type{LibCrossterm.crossterm_Attribute}, v::Attribute.T) = LibCrossterm.crossterm_Attribute(UInt32(v))
 
 """
 Set the text attribute in the terminal.
 """
-attribute(attr::Attribute.T) = @crossterm_call crossterm_style_set_attribute(attr)
+style(attr::Attribute.T) = @crossterm_call crossterm_style_attribute(attr)
 
 """
     crossterm_ClearType
@@ -119,7 +140,7 @@ end
 """
 Show or hide cursor in the terminal.
 """
-cursor(switch = true) =
+cursor(switch::Bool = true) =
   if switch
     show()
   else
@@ -129,7 +150,7 @@ cursor(switch = true) =
 """
 Enable or disable raw mode in the terminal.
 """
-raw_mode(switch = true) =
+raw_mode(switch::Bool = true) =
   if switch
     @crossterm_call crossterm_terminal_enable_raw_mode()
   else
@@ -139,41 +160,42 @@ raw_mode(switch = true) =
 """
 Scroll the terminal screen down by `n` lines.
 """
-scroll_down(n = 1) = @crossterm_call crossterm_terminal_scroll_down(n)
+scroll_down(n::Integer = 1) = @crossterm_call crossterm_terminal_scroll_down(n)
 
 """
 Scroll the terminal screen up by `n` lines.
 """
-scroll_up(n = 1) = @crossterm_call crossterm_terminal_scroll_up(n)
+scroll_up(n::Integer = 1) = @crossterm_call crossterm_terminal_scroll_up(n)
 
 """
 Set the size of the terminal.
 """
-function size(s::NamedTuple{(:x, :y),Tuple{Int64,Int64}})
-  (; x, y) = s
-  @crossterm_call crossterm_terminal_set_size(x, y)
+function size(s::NamedTuple{(:w, :h),Tuple{Int64,Int64}})
+  (; w, h) = s
+  @crossterm_call crossterm_terminal_size_set(w, h)
 end
 
 """
 Get the size of the terminal.
 """
 function size()
-  s = crossterm_TerminalSize(0, 0)
-  @crossterm_call crossterm_terminal_size(Ref(s))
-  x = Int(s.width)
-  y = Int(s.height)
-  (; x, y)
+  width = Ref{UInt16}(0)
+  height = Ref{UInt16}(0)
+  @crossterm_call crossterm_terminal_size(width, height)
+  w = Int(width[])
+  h = Int(height[])
+  (; w, h)
 end
 
 """
 Set the title of the terminal.
 """
-title(t) = @crossterm_call crossterm_terminal_set_title(t)
+title(t::AbstractString) = @crossterm_call crossterm_terminal_title(t)
 
 """
 Enable or disable bracketed paste mode in the terminal.
 """
-bracketed_paste(switch = true) =
+bracketed_paste(switch::Bool = true) =
   if switch
     @crossterm_call crossterm_event_enable_bracketed_paste()
   else
@@ -183,7 +205,7 @@ bracketed_paste(switch = true) =
 """
 Enable or disable focus change event reporting in the terminal.
 """
-focus_change(switch = true) =
+focus_change(switch::Bool = true) =
   if switch
     @crossterm_call crossterm_event_enable_focus_change()
   else
@@ -193,7 +215,7 @@ focus_change(switch = true) =
 """
 Enable or disable mouse capture event reporting in the terminal.
 """
-mouse_capture(switch = true) =
+mouse_capture(switch::Bool = true) =
   if switch
     @crossterm_call crossterm_event_enable_mouse_capture()
   else
@@ -203,7 +225,7 @@ mouse_capture(switch = true) =
 """
 Poll the terminal for input events for duration (Dates.Period)
 """
-function poll(duration::Period = Second(0))
+function poll(duration::Period)
   nanos_total = Nanosecond(duration).value
   secs = trunc(Int, nanos_total ÷ (10^9))
   nanos = trunc(Int, nanos_total % (10^9))
@@ -216,12 +238,12 @@ end
 """
 Poll the terminal for input events for duration (seconds)
 """
-poll(duration::Integer) = poll(Second(duration))
+poll(duration::Number = 0) = poll(Second(duration))
 
 """
 Push or pop the keyboard enhancement flags.
 """
-keyboard_enhancement_flags(switch = true; flags = 0b0000_1000 | 0b0000_0100 | 0b0000_0010 | 0b0000_0001) =
+keyboard_enhancement_flags(switch::Bool = true; flags = 0b0000_1000 | 0b0000_0100 | 0b0000_0010 | 0b0000_0001) =
   if switch
     @crossterm_call crossterm_event_push_keyboard_enhancement_flags(flags)
   else
@@ -354,7 +376,7 @@ end
 """
 Enable or disable cursor blinking in the terminal.
 """
-blinking(switch = true) =
+blinking(switch::Bool = true) =
   if switch
     @crossterm_call crossterm_cursor_enable_blinking()
   else
@@ -404,7 +426,7 @@ row(row = 0) = @crossterm_call crossterm_cursor_move_to_row(row)
 """
 Move the terminal cursor to the specified (x, y) coordinates.
 """
-to(; x, y) = @crossterm_call crossterm_cursor_moveto(x, y)
+to(; x, y) = @crossterm_call crossterm_cursor_move_to(x, y)
 
 """
 Move the terminal cursor to the next line `n` times.
@@ -430,9 +452,10 @@ restore() = @crossterm_call crossterm_cursor_restore_position()
 Get the current position of the terminal cursor.
 """
 function position()
-  p = LibCrossterm.crossterm_CursorPosition(0, 0)
-  @crossterm_call crossterm_cursor_position_get(Ref(p))
-  (; x = Int(p.column), y = Int(p.row))
+  col = Ref{UInt16}(0)
+  row = Ref{UInt16}(0)
+  @crossterm_call crossterm_cursor_position(col, row)
+  (; x = Int(col[]), y = Int(row[]))
 end
 
 """
@@ -440,16 +463,22 @@ Set the position of the terminal cursor to `p` coordinates.
 """
 function position(p::NamedTuple{(:x, :y),Tuple{Int64,Int64}})
   (; x, y) = p
-  p = LibCrossterm.crossterm_CursorPosition(x, y)
-  @crossterm_call crossterm_cursor_position_set(p)
+  @crossterm_call crossterm_cursor_position_set(x, y)
 end
 
 """
-    Style
+Set the position of the terminal cursor to `p` coordinates.
+"""
+function position(x, y)
+  @crossterm_call crossterm_cursor_position_set(x, y)
+end
+
+"""
+    CursorStyle
 
 Different styles for the terminal cursor.
 """
-@enumx Style::UInt32 begin
+@enumx CursorStyle::UInt32 begin
   DEFAULT_USER_SHAPE = 0
   BLINKING_BLOCK = 1
   STEADY_BLOCK = 2
@@ -458,11 +487,63 @@ Different styles for the terminal cursor.
   BLINKING_BAR = 5
   STEADY_BAR = 6
 end
-Base.cconvert(::Type{LibCrossterm.crossterm_CursorStyle}, v::Style.T) = LibCrossterm.crossterm_CursorStyle(UInt32(v))
+Base.cconvert(::Type{LibCrossterm.crossterm_CursorStyle}, v::CursorStyle.T) = LibCrossterm.crossterm_CursorStyle(UInt32(v))
 
 """
 Set the style of the terminal cursor.
 """
-style(s::Style.T) = @crossterm_call crossterm_cursor_set_style(s)
+style(s::CursorStyle.T) = @crossterm_call crossterm_cursor_style(s)
+
+"""
+Flush the stdout stream
+"""
+flush() = @crossterm_call crossterm_flush()
+
+function color(color::Symbol)
+  data = zeros(UInt8, 8)
+  color_tag = get(COLOR_MAP, color, nothing)
+  if isnothing(color_tag)
+    error("Invalid color name: $color")
+  end
+  data[1] = UInt8(color_tag)
+  return LibCrossterm.crossterm_Color(tuple(data...))
+end
+
+function color(rgb::NamedTuple{(:r, :g, :b),Tuple{UInt8,UInt8,UInt8}})
+  (; r, g, b) = rgb
+  data = zeros(UInt8, 8)
+  data[1] = UInt8(LibCrossterm.CROSSTERM_COLOR_RGB)
+  data[5] = r
+  data[6] = g
+  data[7] = b
+  return LibCrossterm.crossterm_Color(tuple(data...))
+end
+
+function color(ansi::UInt8)
+  data = zeros(UInt8, 8)
+  data[1] = UInt8(LibCrossterm.CROSSTERM_COLOR_ANSI_VALUE)
+  data[5] = ansi
+  return LibCrossterm.crossterm_Color(tuple(data...))
+end
+
+"""
+Set background color
+"""
+background(c = :reset) = @crossterm_call crossterm_style_background_color(color(c))
+
+"""
+Set foreground color
+"""
+foreground(c = :reset) = @crossterm_call crossterm_style_foreground_color(color(c))
+
+"""
+Set underline color
+"""
+underline(c = :reset) = @crossterm_call crossterm_style_underline_color(color(c))
+
+"""
+Print to stdout
+"""
+print(s) = @crossterm_call crossterm_style_print(s)
 
 end
