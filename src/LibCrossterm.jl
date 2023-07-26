@@ -384,6 +384,17 @@ function crossterm_clear_last_error()
 end
 
 """
+    crossterm_colors()
+
+Returns colors as a UTF-8 JSON string.
+
+Null character is stored in the last location of buffer. Caller is responsible for memory associated with string buffer. Use [[`crossterm_free_c_char`](@ref)] to free data.
+"""
+function crossterm_colors()
+  @ccall libcrossterm.crossterm_colors()::Ptr{Cchar}
+end
+
+"""
     crossterm_cursor_disable_blinking()
 
 Disables blinking of the terminal cursor.
