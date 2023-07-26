@@ -58,9 +58,9 @@ Enable or disable line wrapping in the terminal.
 """
 line_wrap(switch::Bool = true) =
   if switch
-    @crossterm_call crossterm_enable_line_wrap()
+    @crossterm_call crossterm_terminal_enable_line_wrap()
   else
-    @crossterm_call crossterm_disable_line_wrap()
+    @crossterm_call crossterm_terminal_disable_line_wrap()
   end
 
 """
@@ -68,9 +68,9 @@ Enter or leave the alternate screen buffer of the terminal.
 """
 alternate_screen(switch::Bool = true) =
   if switch
-    @crossterm_call crossterm_enter_alternate_screen()
+    @crossterm_call crossterm_terminal_enter_alternate_screen()
   else
-    @crossterm_call crossterm_leave_alternate_screen()
+    @crossterm_call crossterm_terminal_leave_alternate_screen()
   end
 
 """
