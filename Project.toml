@@ -1,7 +1,7 @@
 name = "Crossterm"
 uuid = "89a1a94d-67fa-4c27-8677-ab6d33b1ad6c"
 authors = ["Dheepak Krishnamurthy"]
-version = "0.4.1"
+version = "0.4.2"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
