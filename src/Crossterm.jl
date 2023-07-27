@@ -238,7 +238,7 @@ end
 """
 Poll the terminal for input events for duration (seconds)
 """
-poll(duration::Number = 0) = poll(Second(duration))
+poll(duration::Number = 0) = poll(Nanosecond(round(duration * 1e9)))
 
 """
 Push or pop the keyboard enhancement flags.
