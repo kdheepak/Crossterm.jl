@@ -32,7 +32,7 @@ macro crossterm_call(expr)
   esc(quote
     result = $(expr)
     if result != 0
-      throw(ErrorException("Error when calling $func. $(last_error_message())"))
+      throw(ErrorException("Error when calling $expr. $(last_error_message())"))
     end
     nothing
   end)
