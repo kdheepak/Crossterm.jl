@@ -243,7 +243,7 @@ poll(duration::Number = 0) = poll(Second(duration))
 """
 Push or pop the keyboard enhancement flags.
 """
-keyboard_enhancement_flags(switch::Bool = true; flags = 0b0000_1000 | 0b0000_0100 | 0b0000_0010 | 0b0000_0001) =
+enhance_keyboard(switch::Bool = true; flags = 0b0000_1000 | 0b0000_0100 | 0b0000_0010 | 0b0000_0001) =
   if switch
     @crossterm_call crossterm_event_push_keyboard_enhancement_flags(flags)
   else
@@ -544,6 +544,11 @@ underline(c = :reset) = @crossterm_call crossterm_style_underline_color(color(c)
 """
 Print to stdout
 """
-print(s) = @crossterm_call crossterm_style_print(s)
+print(s::String) = @crossterm_call crossterm_style_print(s)
+
+"""
+Print to stdout
+"""
+print(s::Char) = @crossterm_call crossterm_style_print_char(s)
 
 end
