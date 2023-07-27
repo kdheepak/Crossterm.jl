@@ -29,10 +29,11 @@ const COLOR_MAP = Dict(
 )
 
 macro crossterm_call(expr)
+  s_expr = string(expr)
   esc(quote
     result = $(expr)
     if result != 0
-      throw(ErrorException("Error when calling $expr. $(last_error_message())"))
+      throw(ErrorException("Error occurred during `$($(s_expr))`: $(last_error_message())"))
     end
     nothing
   end)
