@@ -111,10 +111,44 @@ reset_color() = @crossterm_call crossterm_style_reset_color()
 end
 Base.cconvert(::Type{LibCrossterm.crossterm_Attribute}, v::Attribute.T) = LibCrossterm.crossterm_Attribute(UInt32(v))
 
+const ATTRIBUTES = Dict(
+  :reset => Attribute.RESET,
+  :bold => Attribute.BOLD,
+  :dim => Attribute.DIM,
+  :italic => Attribute.ITALIC,
+  :underlined => Attribute.UNDERLINED,
+  :double_underlined => Attribute.DOUBLE_UNDERLINED,
+  :undercurled => Attribute.UNDERCURLED,
+  :underdotted => Attribute.UNDERDOTTED,
+  :underdashed => Attribute.UNDERDASHED,
+  :slow_blink => Attribute.SLOW_BLINK,
+  :rapid_blink => Attribute.RAPID_BLINK,
+  :reverse => Attribute.REVERSE,
+  :hidden => Attribute.HIDDEN,
+  :crossed_out => Attribute.CROSSED_OUT,
+  :fraktur => Attribute.FRAKTUR,
+  :no_bold => Attribute.NO_BOLD,
+  :normal_intensity => Attribute.NORMAL_INTENSITY,
+  :no_italic => Attribute.NO_ITALIC,
+  :no_underline => Attribute.NO_UNDERLINE,
+  :no_blink => Attribute.NO_BLINK,
+  :no_reverse => Attribute.NO_REVERSE,
+  :no_hidden => Attribute.NO_HIDDEN,
+  :not_crossed_out => Attribute.NOT_CROSSED_OUT,
+  :framed => Attribute.FRAMED,
+  :encircled => Attribute.ENCIRCLED,
+  :over_lined => Attribute.OVER_LINED,
+  :not_framed_or_encircled => Attribute.NOT_FRAMED_OR_ENCIRCLED,
+  :not_over_lined => Attribute.NOT_OVER_LINED,
+)
+
 """
 Set the text attribute in the terminal.
 """
 style(attr::Attribute.T) = @crossterm_call crossterm_style_attribute(attr)
+function style(attr::Symbol = :reset)
+  style(ATTRIBUTES[attr])
+end
 
 """
     crossterm_ClearType
@@ -295,6 +329,11 @@ struct KeyEvent
   state::Vector{String}
 end
 
+struct ResizeEvent
+  w::Int
+  h::Int
+end
+
 function _modifiers(value)
   SHIFT = 1
   CONTROL = 2
@@ -368,6 +407,8 @@ function read()
     row = data["row"]
     modifiers = _modifiers(data["modifiers"]["bits"])
     MouseEvent(kind, column, row, modifiers)
+  elseif tag == EventTag.RESIZE
+    ResizeEvent(data...)
   else
     data
   end
@@ -493,7 +534,7 @@ Base.cconvert(::Type{LibCrossterm.crossterm_CursorStyle}, v::CursorStyle.T) = Li
 """
 Set the style of the terminal cursor.
 """
-style(s::CursorStyle.T) = @crossterm_call crossterm_cursor_style(s)
+cursor_style(s::CursorStyle.T) = @crossterm_call crossterm_cursor_style(s)
 
 """
 Flush the stdout stream
