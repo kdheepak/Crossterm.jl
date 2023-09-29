@@ -1711,6 +1711,15 @@ function crossterm_terminal_leave_alternate_screen()
 end
 
 """
+    crossterm_terminal_ring_bell()
+
+Instructs the terminal to send a bell.
+"""
+function crossterm_terminal_ring_bell()
+  @ccall libcrossterm.crossterm_terminal_ring_bell()::Cint
+end
+
+"""
     crossterm_terminal_scroll_down(n)
 
 Scroll down command.
@@ -1759,6 +1768,24 @@ If these conditions are not met, the behavior is undefined.
 """
 function crossterm_terminal_title(title)
   @ccall libcrossterm.crossterm_terminal_title(title::Ptr{Cchar})::Cint
+end
+
+"""
+    crossterm_use_stderr()
+
+Use `std::io::stderr()` for all commands
+"""
+function crossterm_use_stderr()
+  @ccall libcrossterm.crossterm_use_stderr()::Cvoid
+end
+
+"""
+    crossterm_use_stdout()
+
+Use `std::io::stdout()` for all commands
+"""
+function crossterm_use_stdout()
+  @ccall libcrossterm.crossterm_use_stdout()::Cvoid
 end
 
 # Skipping MacroDefinition: crossterm_KeyModifiers_SHIFT ( crossterm_KeyModifiers ) { . bits = ( uint8_t ) 1 }

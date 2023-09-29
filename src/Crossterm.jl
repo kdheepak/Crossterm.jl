@@ -593,4 +593,15 @@ Print to stdout
 """
 print(s::Char) = @crossterm_call crossterm_style_print_char(s)
 
+bell() = @crossterm_call crossterm_terminal_ring_bell()
+
+"""
+Use stdout or stderr for all commands.
+"""
+stderr(stderr::Bool = true) =
+  if stderr
+    crossterm_use_stdout()
+  else
+    crossterm_use_stderr()
+  end
 end

@@ -13,7 +13,7 @@ libcrossterm_jll = "7fdd842c-1c35-5047-b6c4-5b8c94d478bc"
 EnumX = "1"
 JSON3 = "1"
 julia = "1.6"
-libcrossterm_jll = "0.6"
+libcrossterm_jll = "0.7.2"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
