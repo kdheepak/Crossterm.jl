@@ -6,7 +6,6 @@ DocMeta.setdocmeta!(Crossterm, :DocTestSetup, :(using Crossterm); recursive=true
 makedocs(;
   modules=[Crossterm],
   authors="Dheepak Krishnamurthy",
-  repolink="https://github.com/kdheepak/Crossterm.jl/blob/{commit}{path}#{line}",
   sitename="Crossterm.jl",
   format=Documenter.HTML(;
     prettyurls=get(ENV, "CI", "false") == "true",
