@@ -22,7 +22,7 @@ and more.
 See API documentation below.
 
 ```@autodocs
-Modules = [Crossterm]
+Modules = [Crossterm, Crossterm.CursorStyle, Crossterm.ClearType]
 ```
 
 Full C-API documentation is below
