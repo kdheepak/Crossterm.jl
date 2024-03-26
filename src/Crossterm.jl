@@ -334,45 +334,8 @@ struct ResizeEvent
   h::Int
 end
 
-function _modifiers(value)
-  SHIFT = 1
-  CONTROL = 2
-  ALT = 4
-  SUPER = 8
-  HYPER = 16
-  META = 32
-  NONE = 0
-  modifiers = Dict("SHIFT" => SHIFT, "CONTROL" => CONTROL, "ALT" => ALT, "SUPER" => SUPER, "HYPER" => HYPER, "META" => META)
-
-  active_modifiers = String[]
-
-  for (modifier, bit_value) in modifiers
-    if value & bit_value == bit_value
-      push!(active_modifiers, modifier)
-    end
-  end
-
-  return active_modifiers
-end
-
-function _state(value)
-  KEYPAD = 1
-  CAPS_LOCK = 8
-  NUM_LOCK = 8
-  NONE = 0
-
-  event_states = Dict("KEYPAD" => KEYPAD, "CAPS_LOCK" => CAPS_LOCK, "NUM_LOCK" => NUM_LOCK)
-
-  active_states = String[]
-
-  for (event_state, bit_value) in event_states
-    if value & bit_value == bit_value
-      push!(active_states, event_state)
-    end
-  end
-
-  return active_states
-end
+_modifiers(value) = string.(split(value, '|'))
+_state(value) = string.(split(value, '|'))
 
 """
 Read an event from the terminal.
@@ -394,9 +357,9 @@ function read()
     else
       c
     end
-    modifiers = _modifiers(data["modifiers"]["bits"])
+    modifiers = _modifiers(data["modifiers"])
     kind = data["kind"]
-    state = _state(data["state"]["bits"])
+    state = _state(data["state"])
     KeyEvent(code, modifiers, kind, state)
   elseif tag == EventTag.MOUSE
     kind = data["kind"]
@@ -405,7 +368,7 @@ function read()
     end
     column = data["column"]
     row = data["row"]
-    modifiers = _modifiers(data["modifiers"]["bits"])
+    modifiers = _modifiers(data["modifiers"])
     MouseEvent(kind, column, row, modifiers)
   elseif tag == EventTag.RESIZE
     ResizeEvent(data...)
