@@ -354,8 +354,14 @@ function read()
     elseif c isa Dict && only(keys(c)) == "F"
       c = c["F"]
       "F$c"
-    else
+    elseif c isa Dict && only(keys(c)) == "Modifier"
+      c = c["Modifier"]
       c
+    elseif c isa String
+      c
+    else
+      @error "Unknown key $c"
+      "UNKNOWN"
     end
     modifiers = _modifiers(data["modifiers"])
     kind = data["kind"]
